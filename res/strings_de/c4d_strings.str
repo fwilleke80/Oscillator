@@ -1,0 +1,24 @@
+///////////////////////////////////////////////////
+// Oscillator Global Stringtable :: Deutsch
+///////////////////////////////////////////////////
+// (c) 2010 Jack's Secret Stash
+// All rights reserved.
+///////////////////////////////////////////////////
+
+STRINGTABLE
+{
+	IDS_OSCILLATORNODE					"Oszillator";
+	IDS_OSCILLATOR_NODEGROUP		"Oszillator";
+
+	IDS_FUNC_SINE								"Sinus";
+	IDS_FUNC_COSINE							"Cosinus";
+	IDS_FUNC_TRIANGLE						"Dreieck";
+	IDS_FUNC_SQUARE							"Rechteck";
+	IDS_FUNC_SAWTOOTH						"S\u00E4gezahn";
+	IDS_FUNC_PULSE							"Impuls";
+	IDS_FUNC_PULSERND						"Zufallsimpuls";
+	IDS_FUNC_CUSTOM							"Eigene Kurve";
+	
+	IDS_CURVEPREVIEW						"Vorschau";
+	IDS_DATATYPE_CURVEPREVIEW				"Vorschau";
+}
