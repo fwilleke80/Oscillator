@@ -1,6 +1,0 @@
-1.1
-- Added curve preview area
-- Fixed not working input ports
-
-1.0
-- Initial release
