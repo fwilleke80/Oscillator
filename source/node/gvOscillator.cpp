@@ -1,54 +1,51 @@
-/////////////////////////////////////////////////////////////
-// Oscillator :: Oscillator Node
-/////////////////////////////////////////////////////////////
-// (c) 2010 Jack's Secret Stash
-// All rights reserved.
-/////////////////////////////////////////////////////////////
-
 #include "c4d.h"
-#include "c4d_symbols.h"
 #include "c4d_operatordata.h"
-#include "gvOscillator.h"
-#include "oscillator_ids.h"
-#include "curvepreview.h"
-#include "wsOscillator.h"
+#include "c4d_basebitmap.h"
 
-#define API_VERSION_R12		12000
+// #include "curvepreview.h"
+#include "oscillator.h"
 
-/***************************************************************************
-  Class
-***************************************************************************/
+#include "main.h"
+#include "gvoscillator.h"
+#include "c4d_symbols.h"
 
-static LONG input_ids[] = { INPORT_X, OSC_INPUTSCALE, OSC_PULSEWIDTH, OSC_CUSTOMFUNC, 0 }; // Use this for the input ports!
+
+const Int32 ID_OSCILLATORNODE = 1057105;
+const Int32 ID_OSCILLATOR_NODEGROUP = 1057106;
+
+
+// Use this for the input ports!
+static Int32 g_input_ids[] = {
+	INPORT_X,
+	OSC_INPUTSCALE,
+	OSC_PULSEWIDTH,
+	OSC_CUSTOMFUNC,
+	0
+};
 
 class gvOscillator : public GvOperatorData
 {
-	// Defines super
-	INSTANCEOF(gvOscillator, GvOperatorData)
+	INSTANCEOF(gvOscillator, GvOperatorData);
 
-	private:
-		GvValuesInfo	ports;
-		wsOscillator	osc;
+public:
+	virtual Bool Message(GeListNode* node, Int32 type, void* data) override;
+	virtual Bool GetDDescription(GeListNode* node, Description* description, DESCFLAGS_DESC& flags) override;
 
-		gvOscillator(void)
-		{
-		}
+	virtual Bool iCreateOperator(GvNode* bn) override;
+	virtual const String GetText(GvNode* bn) override;
+	virtual Bool InitCalculation(GvNode* bn, GvCalc* c, GvRun* r) override;
+	virtual void FreeCalculation(GvNode* bn, GvCalc* c) override;
+	virtual Bool Calculate(GvNode* bn, GvPort* port, GvRun* run, GvCalc* calc) override;
 
-		~gvOscillator(void)
-		{
-		}
+private:
+	GvValuesInfo _ports;
+	Oscillator _osc;
 
-	public:
-		Bool Message(GeListNode *node, LONG type, void *data);
-		virtual Bool GetDDescription(GeListNode *node, Description *description, DESCFLAGS_DESC &flags);
-
-		virtual Bool iCreateOperator(GvNode *bn);
-		virtual const String GetText(GvNode *bn);
-		virtual Bool InitCalculation(GvNode *bn, GvCalc *c, GvRun *r);
-		virtual void FreeCalculation(GvNode *bn, GvCalc *c);
-		virtual Bool Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *calc);
-
-  	static NodeData* Alloc(void) { return gNew gvOscillator; }
+public:
+	static NodeData* Alloc()
+	{
+		return NewObj(gvOscillator) iferr_ignore();
+	}
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -56,58 +53,75 @@ class gvOscillator : public GvOperatorData
 ///////////////////////////////////////////////////////////////////////////
 
 // Get data of a port as GeData
-GeData GvGetPortGeData(GvNode* node, GvPort* port, GvRun* run)
-{ 
-	if (!node || !port) return GeData();
+static GeData GvGetPortGeData(GvNode* node, GvPort* port, GvRun* run)
+{
+	iferr_scope_handler
+	{
+		ApplicationOutput("@", err.GetMessage());
+		return GeData();
+	};
 
-	GvPortDescription pd;
-	if (!node->GetPortDescription(port->GetIO(), port->GetMainID(), &pd)) return GeData();
+	if (!node || !port || !run)
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "Any of the arguments is NULL!"_s));
 
-	GvDataInfo* info = GvGetWorld()->GetDataTypeInfo(pd.data_id);
-	if (!info) return GeData();
+	GvPortDescription portDescription;
+	if (!node->GetPortDescription(port->GetIO(), port->GetMainID(), &portDescription))
+		iferr_throw(maxon::UnexpectedError(MAXON_SOURCE_LOCATION, "GetPortDescription() failed!"_s));
+
+	GvDataInfo* dataInfo = GvGetWorld()->GetDataTypeInfo(portDescription.data_id);
+	if (!dataInfo)
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "GetDataTypeInfo() returned NULL!"_s));
 
 	GvDynamicData data;
-	GvAllocDynamicData(node, data, info);
+	GvAllocDynamicData(node, data, dataInfo);
 
-	if (!port->GetData(data.data, data.info->value_handler->value_id, run)) return GeData();
+	if (!port->GetData(data.data, data.info->value_handler->value_id, run))
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "GetData() failed!"_s));
 
-	CUSTOMDATATYPEPLUGIN* pl = FindCustomDataTypePlugin(data.info->data_handler->data_id); 
-	if (!pl) return GeData();
+	CUSTOMDATATYPEPLUGIN* datatypePlugin = FindCustomDataTypePlugin(data.info->data_handler->data_id);
+	if (!datatypePlugin)
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "FindCustomDataTypePlugin() returned NULL!"_s));
 
-	GeData ge_data; 
-	if (!CallCustomDataType(pl, ConvertGvToGeData)(data.data, 0, ge_data)) return GeData();
+	GeData geData;
+	if (!CallCustomDataType(datatypePlugin, ConvertGvToGeData)(data.data, 0, geData))
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "CallCustomDataType() failed!"_s));
 
-	return ge_data;
+	return geData;
 }
 
 // Shows or hides a description from the node.
-Bool ShowDescription(GeListNode *node, Description *descr, LONG MyDescID, Bool DoHide)
+static Bool ShowDescription(GeListNode* node, Description* description, Int32 descID, Bool hide)
 {
-	AutoAlloc<AtomArray> ar; if(!ar) return FALSE;
+	AutoAlloc<AtomArray> ar;
+	if (!ar)
+		return false;
 	ar->Append(static_cast<C4DAtom*>(node));
 
-	BaseContainer *bc = descr->GetParameterI(DescLevel(MyDescID), ar);
-	if(bc) bc->SetBool(DESC_HIDE, !DoHide);
-	else return FALSE;
+	BaseContainer *bc = description->GetParameterI(DescLevel(descID), ar);
+	if (bc)
+		bc->SetBool(DESC_HIDE, hide);
+	else
+		return false;
 
-	return TRUE;
+	return true;
 }
 
 // Sets a default spline into a SplineData (e.g. in SplineCurve GUI description)
-Bool SetDefaultSplineCurve(BaseContainer *data, const LONG DescID)
+static Bool SetDefaultSplineCurve(BaseContainer* data, const Int32 DescID)
 {
-	GeData gd01 (CUSTOMDATATYPE_SPLINE, DEFAULTVALUE);
-	SplineData *p01 = (SplineData*) gd01.GetCustomDataType(CUSTOMDATATYPE_SPLINE);
-	if (!p01) return FALSE;
+	GeData gdCurve (CUSTOMDATATYPE_SPLINE, DEFAULTVALUE);
+	SplineData* splineCurve = (SplineData*)gdCurve.GetCustomDataType(CUSTOMDATATYPE_SPLINE);
+	if (!splineCurve)
+		return false;
 
-	p01->MakeLinearSpline(-1);
-	p01->InsertKnot(RCO 0.0, RCO 0.0, TRUE);
-	p01->InsertKnot(RCO 1.0, RCO 1.0, TRUE);
-	p01->SetRound(RCO 0.0);
+	// Set default spline
+	splineCurve->MakeLinearSplineBezier();
+	splineCurve->InsertKnot(0.0, 0.0, 0);
+	splineCurve->InsertKnot(1.0, 1.0, 0);
 
-	data->SetData(DescID, gd01);
+	data->SetData(DescID, gdCurve);
 
-	return TRUE;
+	return true;
 }
 
 
@@ -115,24 +129,25 @@ Bool SetDefaultSplineCurve(BaseContainer *data, const LONG DescID)
 // Node class members
 ///////////////////////////////////////////////////////////////////////////
 
-Bool gvOscillator::iCreateOperator(GvNode *bn)
+Bool gvOscillator::iCreateOperator(GvNode* bn)
 {
 	BaseContainer* bc = bn->GetOpContainerInstance();
-	if (!bc) return FALSE;
+	if (!bc)
+		return false;
 
-	bc->SetLong(OSC_FUNCTION,			FUNC_SAWTOOTH);
-	bc->SetLong(OSC_RANGE,				RANGE_01);
-	bc->SetReal(OSC_PULSEWIDTH,		RCO 0.3);
-	bc->SetReal(OSC_INPUTSCALE,		RCO 1.0);
+	bc->SetInt32(OSC_FUNCTION,			FUNC_SAWTOOTH);
+	bc->SetInt32(OSC_RANGE,				RANGE_01);
+	bc->SetFloat(OSC_PULSEWIDTH,		0.3);
+	bc->SetFloat(OSC_INPUTSCALE,		1.0);
 	SetDefaultSplineCurve(bc, OSC_CUSTOMFUNC);
 
 	return SUPER::iCreateOperator(bn);
 }
 
 // Get node text (when "port names" if OFF)
-const String gvOscillator::GetText(GvNode *bn)
+const String gvOscillator::GetText(GvNode* bn)
 {
-	switch (bn->GetOpContainerInstance()->GetLong(OSC_FUNCTION))
+	switch (bn->GetOpContainerInstance()->GetInt32(OSC_FUNCTION))
 	{
 		case FUNC_SINE:
 			return GeLoadString(IDS_FUNC_SINE);
@@ -155,172 +170,189 @@ const String gvOscillator::GetText(GvNode *bn)
 	return GeLoadString(IDS_OSCILLATORNODE);
 }
 
-Bool gvOscillator::InitCalculation(GvNode *bn, GvCalc *c, GvRun *r)
+Bool gvOscillator::InitCalculation(GvNode* bn, GvCalc* c, GvRun* r)
 {
-	return GvBuildInValuesTable(bn, ports, c, r, input_ids);   
+	return GvBuildInValuesTable(bn, _ports, c, r, g_input_ids);
 }
 
-Bool gvOscillator::Message(GeListNode *node, LONG type, void *data) //Durchschreiben
+Bool gvOscillator::Message(GeListNode* node, Int32 type, void* data)
 {
-	DescriptionCommand *dc = (DescriptionCommand*) data;
-	BaseContainer *bc = ((GvNode*)node)->GetOpContainerInstance();
+//	GvNode* nodePtr = static_cast<GvNode*>(node);
+//
+//	DescriptionCommand *dc = (DescriptionCommand*)data;
+//	BaseContainer* dataPtr = nodePtr->GetOpContainerInstance();
+//
+//	switch (type)
+//	{
+//		case MSG_DESCRIPTION_POSTSETPARAMETER:
+//		{
+//			CurveDrawData cdd;
+//			cdd.bInvert = dataPtr->GetBool(OSC_INVERT);
+//			cdd.lCurveType = dataPtr->GetInt32(OSC_FUNCTION);
+//			cdd.range = (Oscillator::VALUERANGE)dataPtr->GetInt32(OSC_RANGE);
+//			cdd.rPulseWidth = dataPtr->GetFloat(OSC_PULSEWIDTH);
 
-	switch(type)
-	{
-		case MSG_DESCRIPTION_POSTSETPARAMETER:
-			{
-				CurveDrawData cdd;
-				cdd.bInvert = bc->GetBool(OSC_INVERT);
-				cdd.lCurveType = bc->GetLong(OSC_FUNCTION);
-				cdd.range = (OSCILLATORRANGE)bc->GetLong(OSC_RANGE);
-				cdd.rPulseWidth = bc->GetReal(OSC_PULSEWIDTH);
+//			GeData gd (CUSTOMDATATYPE_CURVEPREVIEW, DEFAULTVALUE);
+//			CurvePreviewData *cpd = (CurvePreviewData*) gd.GetCustomDataType(CUSTOMDATATYPE_CURVEPREVIEW);
+//			cpd->SetCurveDrawData(cdd);
+//			dataPtr->SetData(OSC_PREVIEW, gd);
+//			break;
+//		}
+//	}
 
-				GeData gd (CUSTOMDATATYPE_CURVEPREVIEW, DEFAULTVALUE);
-				CurvePreviewData *cpd = (CurvePreviewData*) gd.GetCustomDataType(CUSTOMDATATYPE_CURVEPREVIEW);
-				cpd->SetCurveDrawData(cdd);
-
-				bc->SetData(OSC_PREVIEW, gd);
-				break;
-			}
-	}
-
-	return TRUE;
+	return true;
 }
 
 void gvOscillator::FreeCalculation(GvNode *bn, GvCalc *c)
 {
-	GvFreeValuesTable(bn, ports);
+	GvFreeValuesTable(bn, _ports);
 }
 
 Bool gvOscillator::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *calc)
 {
-	// Test if port contains valid pointer
-	if(!port || !bn) return FALSE;
+	// Check for nullptr
+	if (!port || !bn)
+		return false;
+
+	// Calculate input ports
+	// ---------------------
 
 	// Get PortValue from Port 0, trigger calculation
-	GvValue* PortVal_x = ports.in_values[0];
-	if (!PortVal_x) return FALSE;   
-	if (!PortVal_x->Calculate(bn, GV_PORT_INPUT_OR_GEDATA, run, calc, 0)) return FALSE;
+	GvValue* portValue = _ports.in_values[0];
+	if (!portValue)
+		return false;
+	if (!portValue->Calculate(bn, GV_PORT_INPUT_OR_GEDATA, run, calc, 0))
+		return false;
 
 	// Get PortValue from Port 1, trigger calculation
-	PortVal_x = ports.in_values[1];
-	if (!PortVal_x) return FALSE;   
-	if (!PortVal_x->Calculate(bn, GV_PORT_INPUT_OR_GEDATA, run, calc, 0)) return FALSE;
+	portValue = _ports.in_values[1];
+	if (!portValue)
+		return false;
+	if (!portValue->Calculate(bn, GV_PORT_INPUT_OR_GEDATA, run, calc, 0))
+		return false;
 
 	// Get PortValue from Port 2, trigger calculation
-	PortVal_x = ports.in_values[2];
-	if (!PortVal_x) return FALSE;   
-	if (!PortVal_x->Calculate(bn, GV_PORT_INPUT_OR_GEDATA, run, calc, 0)) return FALSE;
+	portValue = _ports.in_values[2];
+	if (!portValue)
+		return false;
+	if (!portValue->Calculate(bn, GV_PORT_INPUT_OR_GEDATA, run, calc, 0))
+		return false;
 
 	// Get PortValue from Port 3, trigger calculation
-	PortVal_x = ports.in_values[3];
-	if (!PortVal_x) return FALSE;   
-	if (!PortVal_x->Calculate(bn, GV_PORT_INPUT_OR_GEDATA, run, calc, 0)) return FALSE;
+	portValue = _ports.in_values[3];
+	if (!portValue)
+		return false;
+	if (!portValue->Calculate(bn, GV_PORT_INPUT_OR_GEDATA, run, calc, 0))
+		return false;
 
 
 	// Get node's BaseContainer
-	BaseContainer* bc = bn->GetOpContainerInstance();
-	if (!bc) return FALSE;
+	BaseContainer* dataPtr = bn->GetOpContainerInstance();
+	if (!dataPtr)
+		return false;
+
+	const Oscillator::VALUERANGE outputRange = (Oscillator::VALUERANGE)dataPtr->GetInt32(OSC_RANGE);
+	const Bool outputInvert = dataPtr->GetBool(OSC_INVERT);
 
 	// Input from port X
 	GvPort* iptX = bn->GetInPortFirstMainID(INPORT_X);
 	GeData iptdataX = GvGetPortGeData(bn, iptX, run);
+	const Float inputValue = iptdataX.GetFloat();
 
 	// Input from port INPUT SCALE
-	Real rScale = RCO 0.0;
 	GvPort* iptScale = bn->GetInPortFirstMainID(OSC_INPUTSCALE);
 	GeData iptdataScale = GvGetPortGeData(bn, iptScale, run);
+	Float inputScale = 0.0;
 	if (iptScale)
-		rScale = iptdataScale.GetReal();
+		inputScale = iptdataScale.GetFloat();
 	else
-		rScale = bc->GetReal(OSC_INPUTSCALE);
+		inputScale = dataPtr->GetFloat(OSC_INPUTSCALE);
 
 	// Input from port PULSEWIDTH
-	Real rPW = RCO 0.0;
 	GvPort* iptPW = bn->GetInPortFirstMainID(OSC_PULSEWIDTH);
 	GeData iptdataPW = GvGetPortGeData(bn, iptPW, run);
+	Float pulseWidth = 0.0;
 	if (iptPW)
-		rPW = iptdataPW.GetReal();
+		pulseWidth = iptdataPW.GetFloat();
 	else
-		rPW = bc->GetReal(OSC_PULSEWIDTH);
+		pulseWidth = dataPtr->GetFloat(OSC_PULSEWIDTH);
 
 	// Input from port CUSTOMFUNC
-	SplineData	*curve = NULL;
 	GvPort* iptCV = bn->GetInPortFirstMainID(OSC_CUSTOMFUNC);
 	GeData iptdataCV = GvGetPortGeData(bn, iptCV, run);
+	SplineData *customFuncCurve = nullptr;
 	if (iptCV)
-		curve = (SplineData*)(iptdataCV.GetCustomDataType(CUSTOMDATATYPE_SPLINE));
+		customFuncCurve = (SplineData*)(iptdataCV.GetCustomDataType(CUSTOMDATATYPE_SPLINE));
 	else
-		curve = (SplineData*)(bc->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
+		customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 
-	switch(port->GetMainID())
+	switch (port->GetMainID())
 	{
 		case OUTPORT_VALUE:
 		{
-			switch (bc->GetLong(OSC_FUNCTION))
+			switch (dataPtr->GetInt32(OSC_FUNCTION))
 			{
 				case FUNC_SINE:
-					return port->SetReal(osc.GetSin(iptdataX.GetReal() * rScale, (OSCILLATORRANGE)bc->GetLong(OSC_RANGE), bc->GetBool(OSC_INVERT)), run);
+					return port->SetFloat(_osc.GetSin(inputValue * inputScale, outputRange, outputInvert), run);
 
 				case FUNC_COSINE:
-					return port->SetReal(osc.GetCos(iptdataX.GetReal() * rScale, (OSCILLATORRANGE)bc->GetLong(OSC_RANGE), bc->GetBool(OSC_INVERT)), run);
+					return port->SetFloat(_osc.GetCos(inputValue * inputScale, outputRange, outputInvert), run);
 
 				case FUNC_SAWTOOTH:
-					return port->SetReal(osc.GetSawtooth(iptdataX.GetReal() * rScale, (OSCILLATORRANGE)bc->GetLong(OSC_RANGE), bc->GetBool(OSC_INVERT)), run);
+					return port->SetFloat(_osc.GetSawtooth(inputValue * inputScale, outputRange, outputInvert), run);
 
 				case FUNC_SQUARE:
-					return port->SetReal(osc.GetSquare(iptdataX.GetReal() * rScale, (OSCILLATORRANGE)bc->GetLong(OSC_RANGE), bc->GetBool(OSC_INVERT)), run);
+					return port->SetFloat(_osc.GetSquare(inputValue * inputScale, outputRange, outputInvert), run);
 
 				case FUNC_TRIANGLE:
-					return port->SetReal(osc.GetTriangle(iptdataX.GetReal() * rScale, (OSCILLATORRANGE)bc->GetLong(OSC_RANGE), bc->GetBool(OSC_INVERT)), run);
+					return port->SetFloat(_osc.GetTriangle(inputValue * inputScale, outputRange, outputInvert), run);
 
 				case FUNC_PULSE:
-					return port->SetReal(osc.GetPulse(iptdataX.GetReal() * rScale, rPW, FALSE, (OSCILLATORRANGE)bc->GetLong(OSC_RANGE), bc->GetBool(OSC_INVERT)), run);
+					return port->SetFloat(_osc.GetPulse(inputValue * inputScale, pulseWidth, false, outputRange, outputInvert), run);
 
 				case FUNC_PULSERND:
-					return port->SetReal(osc.GetPulse(iptdataX.GetReal() * rScale, rPW, TRUE, (OSCILLATORRANGE)bc->GetLong(OSC_RANGE), bc->GetBool(OSC_INVERT)), run);
+					return port->SetFloat(_osc.GetPulse(inputValue * inputScale, pulseWidth, true, outputRange, outputInvert), run);
 
 				case FUNC_CUSTOM:
-					{
-						if (!curve) return FALSE;
+				{
+					if (!customFuncCurve)
+						return false;
 
-						Real result = curve->GetPoint(osc.GetSawtooth(iptdataX.GetReal() * rScale, OSCILLATORRANGE_01)).y;
+					Float result = customFuncCurve->GetPoint(_osc.GetSawtooth(iptdataX.GetFloat() * inputScale, Oscillator::VALUERANGE::RANGE01)).y;
 
-						if (bc->GetBool(OSC_INVERT))
-							result = RCO 1.0 - result;
+					if (dataPtr->GetBool(OSC_INVERT))
+						result = 1.0 - result;
 
-						if (bc->GetLong(OSC_RANGE) == RANGE_11)
-							result = result * RCO 2.0 - RCO 1.0;
+					if (dataPtr->GetInt32(OSC_RANGE) == RANGE_11)
+						result = result * 2.0 - 1.0;
 
-						return port->SetReal(result, run); 
-					}
+					return port->SetFloat(result, run);
+				}
 			}
 			break;
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
 
-#if API_VERSION < API_VERSION_R12
-Bool gvOscillator::GetDDescription(GeListNode *node, Description *description, LONG &flags)
-#else
 Bool gvOscillator::GetDDescription(GeListNode *node, Description *description, DESCFLAGS_DESC &flags)
-#endif
 {
-	if (!description->LoadDescription(ID_OSCILLATORNODE)) return FALSE;
-	flags |= DESCFLAGS_DESC_LOADED;
+	if (!description->LoadDescription(ID_OSCILLATORNODE))
+		return false;
 
-	GvNode				*bn  = (GvNode*)node;
-	BaseContainer	*data = bn->GetOpContainerInstance();
+	flags |= DESCFLAGS_DESC::LOADED;
 
-	ShowDescription(node, description, OSC_CUSTOMFUNC, data->GetLong(OSC_FUNCTION) == FUNC_CUSTOM);
-	ShowDescription(node, description, OSC_PULSEWIDTH, data->GetLong(OSC_FUNCTION) == FUNC_PULSE || data->GetLong(OSC_FUNCTION) == FUNC_PULSERND);
-	ShowDescription(node, description, OUTPORT_VALUE, FALSE);
-	ShowDescription(node, description, INPORT_X, FALSE);
+	GvNode *bn  = (GvNode*)node;
+	BaseContainer *data = bn->GetOpContainerInstance();
 
-	return TRUE;
+	ShowDescription(node, description, OSC_CUSTOMFUNC, data->GetInt32(OSC_FUNCTION) == FUNC_CUSTOM);
+	ShowDescription(node, description, OSC_PULSEWIDTH, data->GetInt32(OSC_FUNCTION) == FUNC_PULSE || data->GetInt32(OSC_FUNCTION) == FUNC_PULSERND);
+	ShowDescription(node, description, OUTPORT_VALUE, false);
+	ShowDescription(node, description, INPORT_X, false);
+
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -328,10 +360,11 @@ Bool gvOscillator::GetDDescription(GeListNode *node, Description *description, D
 ///////////////////////////////////////////////////////////////////////////
 
 // Create empty dummy icon, since it's never used by C4D anyway
-BaseBitmap* GetMyGroupIcon()
+static BaseBitmap* GetMyGroupIcon()
 {
 	static AutoAlloc<BaseBitmap> icon;
-	if (!icon) return NULL;
+	if (!icon)
+		return nullptr;
 	if (icon->GetBw() == 0)
 	{
 		icon->Init(24, 24);
@@ -351,14 +384,17 @@ static const String* GetMyGroupName()
 Bool RegisterGvOscillator()
 {
 	// Don't continue without name
-	String name = GeLoadString(IDS_OSCILLATORNODE); if (!name.Content()) return TRUE;
+	const maxon::String name = GeLoadString(IDS_OSCILLATORNODE);
+	if (name.IsEmpty())
+		return true;
 
-	// Create SurfaceSPREAD node group (submenu in XPresso editor)
+	// Create Oscillator node group (submenu in XPresso editor)
 	static GV_OPGROUP_HANDLER mygroup;
 	mygroup.group_id = ID_OSCILLATOR_NODEGROUP;
 	mygroup.GetName = GetMyGroupName;
 	mygroup.GetIcon = GetMyGroupIcon;
-	if (!GvRegisterOpGroupType(&mygroup, sizeof(mygroup))) return FALSE;
+	if (!GvRegisterOpGroupType(&mygroup, sizeof(mygroup)))
+		return false;
 
-	return GvRegisterOperatorPlugin(ID_OSCILLATORNODE, name, 0, gvOscillator::Alloc, "gvOscillator", 0,ID_GV_OPCLASS_TYPE_GENERAL, ID_OSCILLATOR_NODEGROUP, ID_GV_IGNORE_OWNER, AutoBitmap("gvOscillator.tif"));
+	return GvRegisterOperatorPlugin(ID_OSCILLATORNODE, name, 0, gvOscillator::Alloc, "gvoscillator"_s, 0, ID_GV_OPCLASS_TYPE_GENERAL, ID_OSCILLATOR_NODEGROUP, ID_GV_IGNORE_OWNER, AutoBitmap("gvoscillator.tif"_s));
 }

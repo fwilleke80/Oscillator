@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="generated">
+      <UniqueIdentifier>{E00DD869-DB00-EC24-0000-5284111A998F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generated\hxx">
+      <UniqueIdentifier>{E00DD869-DB00-EC24-8ACC-618A6830A19B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{E00DD869-DB00-EC24-0000-00000001B8A0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="res\description">
+      <UniqueIdentifier>{E00DD869-DB00-EC24-9C54-D849A21EBAC0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{E00DD869-DB00-EC24-0000-0000CA90681B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\gui">
+      <UniqueIdentifier>{E00DD869-DB00-EC24-000B-267EBDC445FA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\lib">
+      <UniqueIdentifier>{E00DD869-DB00-EC24-000B-267EBDC45744}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\node">
+      <UniqueIdentifier>{E00DD869-DB00-EC24-0159-A958FAC79123}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\generated\hxx\interface_registration.cpp">
+      <Filter>generated\hxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\generated\hxx\register.cpp">
+      <Filter>generated\hxx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\gui\curvepreview.cpp">
+      <Filter>source\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\lib\oscillator.cpp">
+      <Filter>source\lib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\main.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\node\gvoscillator.cpp">
+      <Filter>source\node</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\res\c4d_symbols.h">
+      <Filter>res</Filter>
+    </ClInclude>
+    <ClInclude Include="..\res\description\gvoscillator.h">
+      <Filter>res\description</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\gui\curvepreview.h">
+      <Filter>source\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\lib\oscillator.h">
+      <Filter>source\lib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\main.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

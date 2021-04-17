@@ -1,13 +1,8 @@
-///////////////////////////////////////////////////
-// Oscillator Global Symbols
-///////////////////////////////////////////////////
-// (c) 2010 Jack's Secret Stash
-// All rights reserved.
-///////////////////////////////////////////////////
+#ifndef C4D_SYMBOLS_H__
+#define C4D_SYMBOLS_H__
 
 enum
 {
-	// string table definitions
 	IDS_OSCILLATORNODE	= 10000,
 	IDS_OSCILLATOR_NODEGROUP,
 
@@ -20,9 +15,7 @@ enum
 	IDS_FUNC_PULSERND,
 	IDS_FUNC_CUSTOM,
 
-	IDS_CURVEPREVIEW,
-	IDS_DATATYPE_CURVEPREVIEW,
-
-  // End of symbol definition
-  _DUMMY_ELEMENT_
+	_DUMMY_ELEMENT_
 };
+
+#endif // C4D_SYMBOLS_H__
