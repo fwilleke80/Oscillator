@@ -13,9 +13,17 @@
  */
 
 
+static const Float TWOBYPI = 2.0 / PI;
+
+MAXON_ATTRIBUTE_FORCE_INLINE Float FreqToAngularVelocity(Float h)
+{
+	return h * 2.0 * PI;
+}
+
+
 Float Oscillator::GetSin(Float x, VALUERANGE valueRange, Bool invert) const
 {
-	Float result = Sin(x * PI * 2.0);
+	Float result = Sin(FreqToAngularVelocity(x));
 
 	if (invert)
 		result *= -1.0;
@@ -28,7 +36,7 @@ Float Oscillator::GetSin(Float x, VALUERANGE valueRange, Bool invert) const
 
 Float Oscillator::GetCos(Float x, VALUERANGE valueRange, Bool invert) const
 {
-	Float result = Cos(x * PI * 2.0);
+	Float result = Cos(FreqToAngularVelocity(x));
 
 	if (invert)
 		result *= -1.0;
@@ -54,20 +62,27 @@ Float	Oscillator::GetSawtooth(Float x, VALUERANGE valueRange, Bool invert) const
 
 Float Oscillator::GetTriangle(Float x, VALUERANGE valueRange, Bool invert) const
 {
-	Float result = (FMod(x, 1.0) < 0.5 ? FMod(x, 1.0) : (1.0 - FMod(x, 1.0))) * 2.0;
+	Float result = ASin(Sin(FreqToAngularVelocity(x))) * TWOBYPI;
 
-	if (invert)
-		result = 1.0 - result;
 
-	if (valueRange == VALUERANGE::RANGE11)
-		result = result * 2.0 - 1.0;
+	if (valueRange == VALUERANGE::RANGE01)
+	{
+		result = result * 0.5 + 0.5;
+		if (invert)
+			result = 1.0 - result;
+	}
+	else
+	{
+		if (invert)
+			result *= -1.0;
+	}
 
 	return result;
 }
 
 Float Oscillator::GetSquare(Float x, VALUERANGE valueRange, Bool invert) const
 {
-	Float result = Round(Sin(x * PI * 2.0) * 0.5 + 0.5);
+	Float result = Sin(FreqToAngularVelocity(x)) > 0.0 ? 0.0 : 1.0;
 
 	if (invert)
 		result = 1.0 - result;
@@ -83,10 +98,15 @@ Float Oscillator::GetPulse(Float x, Float pulseWidth, Bool random, VALUERANGE va
 	Float result;
 
 	if (random)
-		result = (Turbulence(Vector(x), 5, true) < pulseWidth) ? 0.0 : 1.0;
+	{
+		const Float turbValue = Noise(Vector(x));
+		result = (turbValue < pulseWidth) ? 0.0 : 1.0;
+	}
 	else
+	{
 		// Generate Sin() [period 1, range 0..1] and quantize it
-		result = ((Sin(x * PI * 2.0) * 0.5 + 0.5) < pulseWidth) ? 0.0 : 1.0;
+		result = ((Sin(FreqToAngularVelocity(x)) * 0.5 + 0.5) < pulseWidth) ? 0.0 : 1.0;
+	}
 
 	if (invert)
 		result = 1.0 - result;
@@ -101,7 +121,7 @@ Float Oscillator::GetAnalogSaw(Float x, UInt harmonics, VALUERANGE valueRange, B
 {
 	Float result = 0.0;
 	const Float fHarmonics = (Float)harmonics;
-	const Float xValue = x * PI * 2.0;
+	const Float xValue = FreqToAngularVelocity(x);
 
 	for (Float n = 1.0; n < fHarmonics; ++n)
 	{
