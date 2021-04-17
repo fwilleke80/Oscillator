@@ -337,20 +337,20 @@ Bool gvOscillator::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *calc)
 }
 
 
-Bool gvOscillator::GetDDescription(GeListNode *node, Description *description, DESCFLAGS_DESC &flags)
+Bool gvOscillator::GetDDescription(GeListNode* node, Description* description, DESCFLAGS_DESC& flags)
 {
 	if (!description->LoadDescription(ID_OSCILLATORNODE))
 		return false;
 
 	flags |= DESCFLAGS_DESC::LOADED;
 
-	GvNode *bn  = (GvNode*)node;
-	BaseContainer *data = bn->GetOpContainerInstance();
+	GvNode *nodePtr  = static_cast<GvNode*>(node);
+	BaseContainer *dataPtr = nodePtr->GetOpContainerInstance();
 
-	ShowDescription(node, description, OSC_CUSTOMFUNC, data->GetInt32(OSC_FUNCTION) == FUNC_CUSTOM);
-	ShowDescription(node, description, OSC_PULSEWIDTH, data->GetInt32(OSC_FUNCTION) == FUNC_PULSE || data->GetInt32(OSC_FUNCTION) == FUNC_PULSERND);
-	ShowDescription(node, description, OUTPORT_VALUE, false);
-	ShowDescription(node, description, INPORT_X, false);
+	ShowDescription(node, description, OSC_CUSTOMFUNC, dataPtr->GetInt32(OSC_FUNCTION) != FUNC_CUSTOM);
+	ShowDescription(node, description, OSC_PULSEWIDTH, dataPtr->GetInt32(OSC_FUNCTION) != FUNC_PULSE && dataPtr->GetInt32(OSC_FUNCTION) != FUNC_PULSERND);
+	ShowDescription(node, description, OUTPORT_VALUE, true);
+	ShowDescription(node, description, INPORT_X, true);
 
 	return true;
 }
