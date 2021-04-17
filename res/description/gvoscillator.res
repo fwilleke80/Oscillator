@@ -31,30 +31,32 @@ CONTAINER gvOscillator
 		SPLINE OSC_CUSTOMFUNC
 		{
 			HIDDEN;
-			INPORT; 
-			SHOWGRID_H; 
-			SHOWGRID_V; 
-			GRIDSIZE_H 10; 
-			GRIDSIZE_V 10; 
+			INPORT;
 
-			HAS_PRESET_BTN; 
+			SHOWGRID_H;
+			SHOWGRID_V;
 
 			MINSIZE_H 100;
-			MINSIZE_V 90; 
+			MINSIZE_V 90;
 
-			EDIT_H; 
-			EDIT_V; 
+			EDIT_H;
+			EDIT_V;
 
-			HAS_ROUND_SLIDER;
+			X_MIN 0.0;
+			X_MAX 1.0;
 
-			X_MIN 0.0; 
-			X_MAX 1.0; 
+			Y_MIN 0.0;
+			Y_MAX 1.0;
 
-			Y_MIN 0.0; 
-			Y_MAX 1.0; 
+			X_STEPS 0.1;
+			Y_STEPS 0.1;
 
-			X_STEPS 2; 
-			Y_STEPS 2; 
+			OPTIMAL_X_MIN 0.0;
+			OPTIMAL_X_MAX 1.0;
+			OPTIMAL_Y_MIN 0.0;
+			OPTIMAL_Y_MAX 1.0;
+
+			USE_OPTIMAL_RANGE;
 		}
 	}
 
