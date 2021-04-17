@@ -1,0 +1,14 @@
+generated
+
+*.txt
+
+.DS_Store
+*.plist
+*.xcscheme
+*.xcsettings
+*.xcbkptlist
+*.xcuserstate
+*.xcworkspacedata
+
+*.xdl64
+*.xlib
