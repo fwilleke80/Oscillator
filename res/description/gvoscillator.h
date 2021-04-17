@@ -7,21 +7,23 @@ enum
 	OUTPORT_VALUE  = 10001,
 
 	OSC_FUNCTION   = 10002,
-		FUNC_SINE      = 0,
-		FUNC_COSINE    = 1,
-		FUNC_SAWTOOTH  = 2,
-		FUNC_SQUARE    = 3,
-		FUNC_TRIANGLE  = 4,
-		FUNC_PULSE     = 5,
-		FUNC_PULSERND  = 6,
-		FUNC_CUSTOM    = 7,
+		FUNC_SINE       = 0,
+		FUNC_COSINE     = 1,
+		FUNC_SAWTOOTH   = 2,
+		FUNC_SQUARE     = 3,
+		FUNC_TRIANGLE   = 4,
+		FUNC_PULSE      = 5,
+		FUNC_PULSERND   = 6,
+		FUNC_SAW_ANALOG = 7,
+		FUNC_CUSTOM     = 8,
 	OSC_RANGE      = 10003,
-		RANGE_01       = 0,
-		RANGE_11       = 1,
+		RANGE_01        = 0,
+		RANGE_11        = 1,
 	OSC_CUSTOMFUNC = 10004,
 	OSC_INVERT     = 10005,
 	OSC_PULSEWIDTH = 10006,
 	OSC_INPUTSCALE = 10007,
+	OSC_HARMONICS  = 10008
 };
 
 #endif // GVOSCILLATOR_H__

@@ -16,6 +16,8 @@ CONTAINER gvOscillator
 				FUNC_PULSERND;
 				FUNC_SINE;
 				FUNC_COSINE;
+				FUNC_SAW_ANALOG;
+				-1;
 				FUNC_CUSTOM;
 			}
 		}
@@ -28,6 +30,7 @@ CONTAINER gvOscillator
 			}
 		}
 		BOOL OSC_INVERT {  }
+		LONG OSC_HARMONICS { MIN 1; }
 		SPLINE OSC_CUSTOMFUNC
 		{
 			HIDDEN;

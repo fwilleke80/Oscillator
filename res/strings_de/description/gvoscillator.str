@@ -1,31 +1,25 @@
-///////////////////////////////////////////////////
-// Oscillator Node Stringtable :: Deutsch
-///////////////////////////////////////////////////
-// (c) 2010 Jack's Secret Stash
-// All rights reserved.
-///////////////////////////////////////////////////
-
 STRINGTABLE gvOscillator
 {
-	gvOscillator						"Oszillator-Node";
+	gvOscillator       "Oszillator-Node";
 
-	INPORT_X								"x";
-	OUTPORT_VALUE						"Wert";
-	OSC_FUNCTION						"Funktion";
-		FUNC_SINE							"Sinus";
-		FUNC_COSINE						"Cosinus";
-		FUNC_SAWTOOTH					"S\u00E4gezahn";
-		FUNC_SQUARE						"Rechteck";
-		FUNC_TRIANGLE					"Dreieck";
-		FUNC_PULSE						"Impuls";
-		FUNC_PULSERND					"Zufallsimpuls";
-		FUNC_CUSTOM						"Eigene Kurve";
-	OSC_RANGE								"Wertebereich";
-		RANGE_01							"0 .. 1";
-		RANGE_11							"-1 .. 1";
-	OSC_CUSTOMFUNC					"Eigene Kurve";
-	OSC_INVERT							"Invertieren";
-	OSC_PULSEWIDTH					"Impulsbreite";
-	OSC_INPUTSCALE					"Input Scale";
-	OSC_PREVIEW							"Vorschau";
+	INPORT_X           "x";
+	OUTPORT_VALUE      "Wert";
+	OSC_FUNCTION       "Funktion";
+		FUNC_SINE        "Sinus";
+		FUNC_COSINE      "Cosinus";
+		FUNC_SAWTOOTH    "S\u00E4gezahn";
+		FUNC_SQUARE      "Rechteck";
+		FUNC_TRIANGLE    "Dreieck";
+		FUNC_PULSE       "Impuls";
+		FUNC_PULSERND    "Zufallsimpuls";
+		FUNC_SAW_ANALOG  "Analoger S\u00e4gezahn";
+		FUNC_CUSTOM	     "Eigene Kurve";
+	OSC_RANGE          "Wertebereich";
+		RANGE_01         "0 .. 1";
+		RANGE_11         "-1 .. 1";
+	OSC_CUSTOMFUNC     "Eigene Kurve";
+	OSC_INVERT         "Invertieren";
+	OSC_PULSEWIDTH     "Impulsbreite";
+	OSC_INPUTSCALE     "Input Scale";
+	OSC_HARMONICS      "Obert\u00f6ne";
 }

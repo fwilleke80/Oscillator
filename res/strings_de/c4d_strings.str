@@ -10,5 +10,6 @@ STRINGTABLE
 	IDS_FUNC_SAWTOOTH        "S\u00E4gezahn";
 	IDS_FUNC_PULSE           "Impuls";
 	IDS_FUNC_PULSERND        "Zufallsimpuls";
+	IDS_FUNC_SAW_ANALOG      "Analoges Rechteck";
 	IDS_FUNC_CUSTOM          "Eigene Kurve";
 }
