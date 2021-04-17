@@ -120,13 +120,15 @@ Float Oscillator::GetPulse(Float x, Float pulseWidth, Bool random, VALUERANGE va
 Float Oscillator::GetAnalogSaw(Float x, UInt harmonics, VALUERANGE valueRange, Bool invert) const
 {
 	Float result = 0.0;
-	const Float fHarmonics = (Float)harmonics;
+	const Float fHarmonics = (Float)(harmonics + 1);
 	const Float xValue = FreqToAngularVelocity(x);
 
 	for (Float n = 1.0; n < fHarmonics; ++n)
 	{
 		result += Sin(n * xValue) / n;
 	}
+
+	result *= TWOBYPI;
 
 	if (invert)
 		result *= -1.0;
