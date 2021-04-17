@@ -19,9 +19,11 @@ static Int32 g_input_ids[] = {
 	INPORT_X,
 	OSC_INPUTSCALE,
 	OSC_PULSEWIDTH,
+	OSC_HARMONICS,
 	OSC_CUSTOMFUNC,
 	0
 };
+
 
 class gvOscillator : public GvOperatorData
 {
@@ -131,16 +133,32 @@ static Bool SetDefaultSplineCurve(BaseContainer* data, const Int32 DescID)
 
 Bool gvOscillator::iCreateOperator(GvNode* bn)
 {
+	iferr_scope_handler
+	{
+		ApplicationOutput("@", err.GetMessage());
+		return false;
+	};
+
 	BaseContainer* dataPtr = bn->GetOpContainerInstance();
 	if (!dataPtr)
-		return false;
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "GetOpContainerInstance() returned NULL!"_s));
 
+	// Set default attribute values
 	dataPtr->SetInt32(OSC_FUNCTION, FUNC_SAWTOOTH);
 	dataPtr->SetInt32(OSC_RANGE, RANGE_01);
 	dataPtr->SetFloat(OSC_PULSEWIDTH, 0.3);
 	dataPtr->SetFloat(OSC_INPUTSCALE, 1.0);
-	dataPtr->SetUInt32(OSC_HARMONICS, 2);
-	SetDefaultSplineCurve(dataPtr, OSC_CUSTOMFUNC);
+	dataPtr->SetUInt32(OSC_HARMONICS, 4);
+
+	// Set default spline
+	GeData gdCurve (CUSTOMDATATYPE_SPLINE, DEFAULTVALUE);
+	SplineData* splineCurve = static_cast<SplineData*>(gdCurve.GetCustomDataType(CUSTOMDATATYPE_SPLINE));
+	if (!splineCurve)
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "splineCurve is NULL!"_s));
+	splineCurve->MakeLinearSplineBezier();
+	splineCurve->InsertKnot(0.0, 0.0, 0);
+	splineCurve->InsertKnot(1.0, 1.0, 0);
+	dataPtr->SetData(OSC_CUSTOMFUNC, gdCurve);
 
 	return SUPER::iCreateOperator(bn);
 }
@@ -265,12 +283,12 @@ Bool gvOscillator::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *calc)
 
 	// Input from port X
 	GvPort* iptX = bn->GetInPortFirstMainID(INPORT_X);
-	GeData iptdataX = GvGetPortGeData(bn, iptX, run);
+	const GeData iptdataX = GvGetPortGeData(bn, iptX, run);
 	const Float inputValue = iptdataX.GetFloat();
 
 	// Input from port INPUT SCALE
 	GvPort* iptScale = bn->GetInPortFirstMainID(OSC_INPUTSCALE);
-	GeData iptdataScale = GvGetPortGeData(bn, iptScale, run);
+	const GeData iptdataScale = GvGetPortGeData(bn, iptScale, run);
 	Float inputScale = 0.0;
 	if (iptScale)
 		inputScale = iptdataScale.GetFloat();
@@ -279,7 +297,7 @@ Bool gvOscillator::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *calc)
 
 	// Input from port PULSEWIDTH
 	GvPort* iptPW = bn->GetInPortFirstMainID(OSC_PULSEWIDTH);
-	GeData iptdataPW = GvGetPortGeData(bn, iptPW, run);
+	const GeData iptdataPW = GvGetPortGeData(bn, iptPW, run);
 	Float pulseWidth = 0.0;
 	if (iptPW)
 		pulseWidth = iptdataPW.GetFloat();
@@ -288,7 +306,7 @@ Bool gvOscillator::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *calc)
 
 	// Input from port CUSTOMFUNC
 	GvPort* iptCV = bn->GetInPortFirstMainID(OSC_CUSTOMFUNC);
-	GeData iptdataCV = GvGetPortGeData(bn, iptCV, run);
+	const GeData iptdataCV = GvGetPortGeData(bn, iptCV, run);
 	SplineData* customFuncCurve = nullptr;
 	if (iptCV)
 		customFuncCurve = static_cast<SplineData*>(iptdataCV.GetCustomDataType(CUSTOMDATATYPE_SPLINE));
@@ -323,7 +341,7 @@ Bool gvOscillator::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *calc)
 					return port->SetFloat(_osc.GetPulse(inputValue * inputScale, pulseWidth, true, outputRange, outputInvert), run);
 
 				case FUNC_SAW_ANALOG:
-					return port->SetFloat(_osc.GetAnalogSaw(inputValue * inputScale, dataPtr->GetUInt32(OSC_HARMONICS), outputRange, outputInvert), run);
+					return port->SetFloat(_osc.GetAnalogSaw(inputValue * inputScale, dataPtr->GetUInt32(OSC_HARMONICS), outputRange, !outputInvert), run);
 
 				case FUNC_CUSTOM:
 				{
@@ -391,7 +409,7 @@ static BaseBitmap* GetMyGroupIcon()
 // Return pointer to node's Group name
 static const String* GetMyGroupName()
 {
-	static String mygroup(GeLoadString(IDS_OSCILLATOR_NODEGROUP));
+	static const String mygroup(GeLoadString(IDS_OSCILLATOR_NODEGROUP));
 	return &mygroup;
 }
 
