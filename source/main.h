@@ -5,6 +5,5 @@
 
 
 Bool RegisterGvOscillator();
-// Bool RegisterCurvePreviewGui();
 
 #endif // MAIN_H__

@@ -1,3 +1,4 @@
+#include "customgui_bitmapbutton.h"
 #include "customgui_splinecontrol.h"
 #include "c4d_operatordata.h"
 #include "c4d_basebitmap.h"
@@ -5,7 +6,6 @@
 #include "c4d_general.h"
 #include "ge_prepass.h"
 
-// #include "curvepreview.h"
 #include "oscillator.h"
 
 #include "main.h"
@@ -69,6 +69,7 @@ class OscillatorNode : public GvOperatorData
 public:
 	virtual Bool Message(GeListNode* node, Int32 type, void* data) override;
 	virtual Bool GetDDescription(GeListNode* node, Description* description, DESCFLAGS_DESC& flags) override;
+	virtual Bool GetDParameter(GeListNode* node, const DescID& id, GeData& t_data, DESCFLAGS_GET& flags) override;
 
 	virtual Bool iCreateOperator(GvNode* bn) override;
 	virtual const String GetText(GvNode* bn) override;
@@ -77,14 +78,18 @@ public:
 	virtual Bool Calculate(GvNode* bn, GvPort* port, GvRun* run, GvCalc* calc) override;
 
 private:
-	GvValuesInfo _ports;
-	Oscillator _osc;
+	GvValuesInfo _ports; // Inports and outports
+	Oscillator _osc; // Oscillator instance
+	Int32 _dirty; // Dirty count (used to make the waveform preview bitmapbutton update)
 
 public:
 	static NodeData* Alloc()
 	{
 		return NewObj(OscillatorNode) iferr_ignore();
 	}
+
+	OscillatorNode() : _dirty(0)
+	{ }
 };
 
 
@@ -155,15 +160,40 @@ Bool OscillatorNode::InitCalculation(GvNode* bn, GvCalc* calc, GvRun* run)
 
 Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 {
-//	GvNode* nodePtr = static_cast<GvNode*>(node);
-//
-//	DescriptionCommand *dc = (DescriptionCommand*)data;
-//	BaseContainer* dataPtr = nodePtr->GetOpContainerInstance();
-//
+	GvNode* nodePtr = static_cast<GvNode*>(node);
+
+	switch (type)
+	{
+		case MSG_DESCRIPTION_GETBITMAP:
+		{
+			BaseContainer* dataPtr = nodePtr->GetOpContainerInstance();
+
+			Oscillator::OSCTYPE oscType = (Oscillator::OSCTYPE)dataPtr->GetInt32(OSC_FUNCTION);
+			const Oscillator::VALUERANGE valueRange = (Oscillator::VALUERANGE)dataPtr->GetInt32(OSC_RANGE);
+			const Bool invert = dataPtr->GetBool(OSC_INVERT);
+			const Float pulseWidth = dataPtr->GetFloat(OSC_PULSEWIDTH);
+			const UInt harmonics = dataPtr->GetUInt32(OSC_HARMONICS);
+
+			Oscillator::WaveformParameters parameters(valueRange, invert, false, pulseWidth, harmonics);
+
+			DescriptionGetBitmap* dgb = (DescriptionGetBitmap*)data;
+			dgb->_width = 400;
+			dgb->_bmpflags = ICONDATAFLAGS::NONE;
+
+			BaseBitmap* _previewBitmap = _osc.RenderToBitmap(400, 100, oscType, parameters);
+
+			dgb->_bmp = _previewBitmap;
+
+			return true;
+		}
+
+	}
+
 //	switch (type)
 //	{
 //		case MSG_DESCRIPTION_POSTSETPARAMETER:
 //		{
+//			DescriptionCommand *dc = (DescriptionCommand*)data;
 //			CurveDrawData cdd;
 //			cdd.bInvert = dataPtr->GetBool(OSC_INVERT);
 //			cdd.lCurveType = dataPtr->GetInt32(OSC_FUNCTION);
@@ -265,54 +295,58 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 		//		if (run->IsIterationPath())
 		//			GePrint("Node is connected to an iterator"); // maybe want to act special here
 
+		const Int32 oscFunction = dataPtr->GetInt32(OSC_FUNCTION);
+
+		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, oscFunction == FUNC_PULSERND, pulseWidth, harmonics);
+
 		Float waveformValue = 0.0;
-		switch (dataPtr->GetInt32(OSC_FUNCTION))
+		switch (oscFunction)
 		{
 			case FUNC_SINE:
 			{
-				waveformValue = _osc.GetSin(inputValue * frequency, outputRange, outputInvert);
+				waveformValue = _osc.GetSin(inputValue * frequency, waveformParameters);
 				break;
 			}
 
 			case FUNC_COSINE:
 			{
-				waveformValue = _osc.GetCos(inputValue * frequency, outputRange, outputInvert);
+				waveformValue = _osc.GetCos(inputValue * frequency, waveformParameters);
 				break;
 			}
 
 			case FUNC_SAWTOOTH:
 			{
-				waveformValue = _osc.GetSawtooth(inputValue * frequency, outputRange, outputInvert);
+				waveformValue = _osc.GetSawtooth(inputValue * frequency, waveformParameters);
 				break;
 			}
 
 			case FUNC_SQUARE:
 			{
-				waveformValue = _osc.GetSquare(inputValue * frequency, outputRange, outputInvert);
+				waveformValue = _osc.GetSquare(inputValue * frequency, waveformParameters);
 				break;
 			}
 
 			case FUNC_TRIANGLE:
 			{
-				waveformValue = _osc.GetTriangle(inputValue * frequency, outputRange, outputInvert);
+				waveformValue = _osc.GetTriangle(inputValue * frequency, waveformParameters);
 				break;
 			}
 
 			case FUNC_PULSE:
 			{
-				waveformValue = _osc.GetPulse(inputValue * frequency, pulseWidth, false, outputRange, outputInvert);
+				waveformValue = _osc.GetPulse(inputValue * frequency, waveformParameters);
 				break;
 			}
 
 			case FUNC_PULSERND:
 			{
-				waveformValue = _osc.GetPulse(inputValue * frequency, pulseWidth, true, outputRange, outputInvert);
+				waveformValue = _osc.GetPulseRandom(inputValue * frequency, waveformParameters);
 				break;
 			}
 
 			case FUNC_SAW_ANALOG:
 			{
-				waveformValue = _osc.GetAnalogSaw(inputValue * frequency, harmonics, outputRange, !outputInvert);
+				waveformValue = _osc.GetAnalogSaw(inputValue * frequency, waveformParameters);
 				break;
 			}
 
@@ -321,12 +355,12 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 				if (!customFuncCurve)
 					iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
-				waveformValue = customFuncCurve->GetPoint(_osc.GetSawtooth(inputValue * frequency, Oscillator::VALUERANGE::RANGE01)).y;
+				waveformValue = customFuncCurve->GetPoint(_osc.GetSawtooth(inputValue * frequency, Oscillator::WaveformParameters(Oscillator::VALUERANGE::RANGE01, false, false, 0.0, 0))).y;
 
-				if (dataPtr->GetBool(OSC_INVERT))
+				if (outputInvert)
 					waveformValue = 1.0 - waveformValue;
 
-				if (dataPtr->GetInt32(OSC_RANGE) == RANGE_11)
+				if (outputRange == Oscillator::VALUERANGE::RANGE11)
 					waveformValue = waveformValue * 2.0 - 1.0;
 
 				break;
@@ -363,6 +397,24 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 
 	return true;
 }
+
+Bool OscillatorNode::GetDParameter(GeListNode* node, const DescID& id, GeData& t_data, DESCFLAGS_GET& flags)
+{
+	switch (id[0].id)
+	{
+		case OSC_WAVEFORMPREVIEW:
+		{
+			++_dirty;
+			BitmapButtonStruct bbs(static_cast<BaseList2D*>(node), id, _dirty);
+			t_data = GeData(CUSTOMDATATYPE_BITMAPBUTTON, bbs);
+			flags |= DESCFLAGS_GET::PARAM_GET;
+			break;
+		}
+	}
+
+	return SUPER::GetDParameter(node, id, t_data, flags);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // Register stuff
