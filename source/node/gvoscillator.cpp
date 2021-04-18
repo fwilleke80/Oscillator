@@ -146,6 +146,8 @@ const String OscillatorNode::GetText(GvNode* bn)
 			return GeLoadString(IDS_FUNC_PULSERND);
 		case FUNC_SAW_ANALOG:
 			return GeLoadString(IDS_FUNC_SAW_ANALOG);
+		case FUNC_SHARKTOOTH_ANALOG:
+			return GeLoadString(IDS_FUNC_SHARKTOOTH_ANALOG);
 		case FUNC_CUSTOM:
 			return GeLoadString(IDS_FUNC_CUSTOM);
 	}
@@ -168,7 +170,7 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 		{
 			BaseContainer* dataPtr = nodePtr->GetOpContainerInstance();
 
-			Oscillator::OSCTYPE oscType = (Oscillator::OSCTYPE)dataPtr->GetInt32(OSC_FUNCTION);
+			Oscillator::WAVEFORMTYPE oscType = (Oscillator::WAVEFORMTYPE)dataPtr->GetInt32(OSC_FUNCTION);
 			const Oscillator::VALUERANGE valueRange = (Oscillator::VALUERANGE)dataPtr->GetInt32(OSC_RANGE);
 			const Bool invert = dataPtr->GetBool(OSC_INVERT);
 			const Float pulseWidth = dataPtr->GetFloat(OSC_PULSEWIDTH);
@@ -350,6 +352,12 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 				break;
 			}
 
+			case FUNC_SHARKTOOTH_ANALOG:
+			{
+				waveformValue = _osc.GetAnalogSharktooth(inputValue * frequency, waveformParameters);
+				break;
+			}
+
 			case FUNC_CUSTOM:
 			{
 				if (!customFuncCurve)
@@ -391,7 +399,7 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 
 	HideDescriptionElement(node, description, OSC_CUSTOMFUNC, func != FUNC_CUSTOM);
 	HideDescriptionElement(node, description, OSC_PULSEWIDTH, func != FUNC_PULSE && func != FUNC_PULSERND);
-	HideDescriptionElement(node, description, OSC_HARMONICS, func != FUNC_SAW_ANALOG);
+	HideDescriptionElement(node, description, OSC_HARMONICS, func != FUNC_SAW_ANALOG && func != FUNC_SHARKTOOTH_ANALOG);
 	HideDescriptionElement(node, description, OUTPORT_VALUE, true);
 	HideDescriptionElement(node, description, INPORT_X, true);
 

@@ -13,6 +13,7 @@ STRINGTABLE gvOscillator
 		FUNC_PULSE       "Impuls";
 		FUNC_PULSERND    "Zufallsimpuls";
 		FUNC_SAW_ANALOG  "Analoger S\u00e4gezahn";
+		FUNC_SHARKTOOTH_ANALOG "Analoger Haifischzahn";
 		FUNC_CUSTOM	     "Eigene Kurve";
 	OSC_RANGE          "Wertebereich";
 		RANGE_01         "0 .. 1";

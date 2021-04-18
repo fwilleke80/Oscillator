@@ -18,6 +18,7 @@ CONTAINER gvOscillator
 				FUNC_SINE;
 				FUNC_COSINE;
 				FUNC_SAW_ANALOG;
+				FUNC_SHARKTOOTH_ANALOG;
 				-1;
 				FUNC_CUSTOM;
 			}

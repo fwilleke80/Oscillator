@@ -143,7 +143,32 @@ Float Oscillator::GetAnalogSaw(Float x, const WaveformParameters& parameters) co
 	return result;
 }
 
-BaseBitmap* Oscillator::RenderToBitmap(Int32 w, Int32 h, Oscillator::OSCTYPE oscType, const WaveformParameters& parameters)
+Float Oscillator::GetAnalogSharktooth(Float x, const WaveformParameters& parameters) const
+{
+	Float result = 0.0;
+	const Float fHarmonics = (Float)(parameters.harmonics + 1);
+	const Float xValue = FreqToAngularVelocity(x);
+
+	for (Float n = 1.0; n < fHarmonics; ++n)
+	{
+		if (FMod(n, 2.0) == 0.0)
+			result += Sin(n * xValue) / n;
+		else
+			result -= Cos(n * xValue) / n;
+	}
+
+	result *= TWOBYPI;
+
+	if (!parameters.invert)
+		result *= -1.0;
+
+	if (parameters.valueRange == VALUERANGE::RANGE01)
+		result = result * 0.5 + 0.5;
+
+	return result;
+}
+
+BaseBitmap* Oscillator::RenderToBitmap(Int32 w, Int32 h, Oscillator::WAVEFORMTYPE oscType, const WaveformParameters& parameters)
 {
 	BaseBitmap* bmp = BaseBitmap::Alloc();
 	if (!bmp)
@@ -175,7 +200,7 @@ BaseBitmap* Oscillator::RenderToBitmap(Int32 w, Int32 h, Oscillator::OSCTYPE osc
 	{
 		const Float xSample = (Float)x * iw1 * previewScaleX;
 		Float y = (Int32)(SampleWaveform(xSample, oscType, parameters) * (Float)(h - 1));
-		if (oscType == Oscillator::OSCTYPE::SAW_ANALOG)
+		if (oscType == Oscillator::WAVEFORMTYPE::SAW_ANALOG)
 			y *= 0.9;
 		if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
 			y = y * 0.5 + h * 0.5;

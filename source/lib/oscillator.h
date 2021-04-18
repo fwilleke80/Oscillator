@@ -12,7 +12,10 @@
 class Oscillator
 {
 public:
-	enum class OSCTYPE
+	///
+	/// \brief Available waveform types
+	///
+	enum class WAVEFORMTYPE
 	{
 		SINE = 0,
 		COSINE = 1,
@@ -21,22 +24,29 @@ public:
 		TRIANGLE = 4,
 		PULSE = 5,
 		PULSERND = 6,
-		SAW_ANALOG = 7
-	} MAXON_ENUM_LIST_CLASS(OSCTYPE);
+		SAW_ANALOG = 7,
+		SHARKTOOTH_ANALOG = 8
+	} MAXON_ENUM_LIST_CLASS(WAVEFORMTYPE);
 
+	///
+	/// \brief Output value range
+	///
 	enum class VALUERANGE
 	{
 		RANGE01 = 0,
 		RANGE11 = 1
 	} MAXON_ENUM_LIST_CLASS(VALUERANGE);
 
+	///
+	/// \brief Parameters for waveform generation
+	///
 	struct WaveformParameters
 	{
 		VALUERANGE valueRange; ///< The output value range. Either [0 .. 1] or [-1 .. 1]
 		Bool invert; ///< If this is true, the output phase will be inverted
 		Bool random; ///< If this is true, GetPulse() will return a noise-based pulse
 		Float pulseWidth; ///< Defines the pulse width of GetPulse(). [0 .. 1].
-		UInt harmonics; ///< Defines the nmber of harmonics in GetAnalogSaw(). [1 .. infinite]
+		UInt harmonics; ///< Defines the nmber of harmonics in GetAnalogX(). [1 .. infinite]
 
 		/// \brief Default vonstructor
 		WaveformParameters() : valueRange(VALUERANGE::RANGE01), invert(false), random(false), pulseWidth(0.0), harmonics(0)
@@ -139,7 +149,7 @@ public:
 	///
 	/// \brief Samples a sawtooth wave by overlaying sine waves in harmonic frequencies.
 	///
-	/// \note This waveform is significantly slower to calculate than the others. In return, it looks sounds much better.
+	/// \note This waveform is significantly slower to calculate than the non-analogue ones. In return, it looks sounds much better.
 	///
 	/// \param[in] x The sample position (aka. time)
 	/// \param[in] parameters The waveform parameters
@@ -149,28 +159,42 @@ public:
 	Float GetAnalogSaw(Float x, const WaveformParameters& parameters) const;
 
 	///
+	/// \brief Samples a sharktooth wave by overlaying sine and cosine waves.
+	///
+	/// \note This waveform is significantly slower to calculate than the non-analogue ones. In return, it looks sounds much better.
+	///
+	/// \param[in] x The sample position (aka. time)
+	/// \param[in] parameters The waveform parameters
+	///
+	/// \return The waveform value as position x
+	///
+	Float GetAnalogSharktooth(Float x, const WaveformParameters& parameters) const;
+
+	///
 	/// \brief Returns any of the waveforms, depending on oscType
 	///
-	MAXON_ATTRIBUTE_FORCE_INLINE Float SampleWaveform(Float x, OSCTYPE oscType, const WaveformParameters& parameters) const
+	MAXON_ATTRIBUTE_FORCE_INLINE Float SampleWaveform(Float x, WAVEFORMTYPE oscType, const WaveformParameters& parameters) const
 	{
 		switch (oscType)
 		{
-			case OSCTYPE::SINE:
+			case WAVEFORMTYPE::SINE:
 				return GetSin(x, parameters);
-			case OSCTYPE::COSINE:
+			case WAVEFORMTYPE::COSINE:
 				return GetCos(x, parameters);
-			case OSCTYPE::SAWTOOTH:
+			case WAVEFORMTYPE::SAWTOOTH:
 				return GetSawtooth(x, parameters);
-			case OSCTYPE::SQUARE:
+			case WAVEFORMTYPE::SQUARE:
 				return GetSquare(x, parameters);
-			case OSCTYPE::TRIANGLE:
+			case WAVEFORMTYPE::TRIANGLE:
 				return GetTriangle(x, parameters);
-			case OSCTYPE::PULSE:
+			case WAVEFORMTYPE::PULSE:
 				return GetPulse(x, parameters);
-			case OSCTYPE::PULSERND:
+			case WAVEFORMTYPE::PULSERND:
 				return GetPulseRandom(x, parameters);
-			case OSCTYPE::SAW_ANALOG:
+			case WAVEFORMTYPE::SAW_ANALOG:
 				return GetAnalogSaw(x, parameters);
+			case WAVEFORMTYPE::SHARKTOOTH_ANALOG:
+				return GetAnalogSharktooth(x, parameters);
 		}
 		return 0.0;
 	}
@@ -178,7 +202,7 @@ public:
 	///
 	/// \brief Renders the waveform to a BaseBitmap. Caller owns the pointed object.
 	///
-	BaseBitmap* RenderToBitmap(Int32 w, Int32 h, Oscillator::OSCTYPE oscType, const WaveformParameters& parameters);
+	BaseBitmap* RenderToBitmap(Int32 w, Int32 h, Oscillator::WAVEFORMTYPE oscType, const WaveformParameters& parameters);
 };
 
 #endif // OSCILLATOR_H__

@@ -13,6 +13,7 @@ STRINGTABLE gvOscillator
 		FUNC_PULSE       "Pulse";
 		FUNC_PULSERND    "Random Pulse";
 		FUNC_SAW_ANALOG  "Analogue Sawtooth";
+		FUNC_SHARKTOOTH_ANALOG "Analogue Sharktooth";
 		FUNC_CUSTOM      "Custom Curve";
 	OSC_RANGE          "Range";
 		RANGE_01         "0 .. 1";
