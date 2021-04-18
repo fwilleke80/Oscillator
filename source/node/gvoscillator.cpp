@@ -98,7 +98,7 @@ Bool OscillatorNode::iCreateOperator(GvNode* bn)
 
 	BaseContainer* dataPtr = bn->GetOpContainerInstance();
 	if (!dataPtr)
-		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "GetOpContainerInstance() returned NULL!"_s));
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "GetOpContainerInstance() returned nullptr!"_s));
 
 	// Set default attribute values
 	dataPtr->SetInt32(OSC_FUNCTION, FUNC_SAWTOOTH);
@@ -111,7 +111,7 @@ Bool OscillatorNode::iCreateOperator(GvNode* bn)
 	GeData gdCurve(CUSTOMDATATYPE_SPLINE, DEFAULTVALUE);
 	SplineData* splineCurve = static_cast<SplineData*>(gdCurve.GetCustomDataType(CUSTOMDATATYPE_SPLINE));
 	if (!splineCurve)
-		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "splineCurve is NULL!"_s));
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "splineCurve is nullptr!"_s));
 	splineCurve->MakeLinearSplineBezier();
 	splineCurve->InsertKnot(0.0, 0.0, 0);
 	splineCurve->InsertKnot(1.0, 1.0, 0);
@@ -213,7 +213,7 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 	// Get node's BaseContainer
 	BaseContainer* dataPtr = bn->GetOpContainerInstance();
 	if (!dataPtr)
-		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "GetOpContainerInstance() returned NULL!"_s));
+		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "GetOpContainerInstance() returned nullptr!"_s));
 
 	const Oscillator::VALUERANGE outputRange = (Oscillator::VALUERANGE)dataPtr->GetInt32(OSC_RANGE);
 	const Bool outputInvert = dataPtr->GetBool(OSC_INVERT);
@@ -259,7 +259,7 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 
 		SplineData* customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 		if (!customFuncCurve)
-			iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is NULL!"_s));
+			iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
 		//		// Do the sum calculation for the long output
 		//		if (run->IsIterationPath())
@@ -319,7 +319,7 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 			case FUNC_CUSTOM:
 			{
 				if (!customFuncCurve)
-					iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is NULL!"_s));
+					iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
 				waveformValue = customFuncCurve->GetPoint(_osc.GetSawtooth(inputValue * frequency, Oscillator::VALUERANGE::RANGE01)).y;
 
