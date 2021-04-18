@@ -1,7 +1,5 @@
 generated
 
-*.txt
-
 .DS_Store
 *.plist
 *.xcscheme
