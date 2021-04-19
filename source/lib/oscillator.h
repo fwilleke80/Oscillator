@@ -223,7 +223,7 @@ public:
 	{
 		Float result = Sign(Sin(FreqToAngularVelocity(x)));
 
-		if (parameters.invert)
+		if (parameters.valueRange == VALUERANGE::RANGE01)
 		{
 			result = result * 0.5 + 0.5;
 			if (parameters.invert)
