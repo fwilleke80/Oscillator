@@ -55,6 +55,8 @@ static Int32 g_input_ids[] = {
 	OSC_INPUTSCALE,
 	OSC_PULSEWIDTH,
 	OSC_HARMONICS,
+	OSC_HARMONICS_INTERVAL,
+	OSC_HARMONICS_OFFSET,
 	0
 };
 
@@ -111,6 +113,8 @@ Bool OscillatorNode::iCreateOperator(GvNode* bn)
 	dataPtr->SetFloat(OSC_PULSEWIDTH, 0.3);
 	dataPtr->SetFloat(OSC_INPUTSCALE, 1.0);
 	dataPtr->SetUInt32(OSC_HARMONICS, 4);
+	dataPtr->SetFloat(OSC_HARMONICS_INTERVAL, 1.0);
+	dataPtr->SetFloat(OSC_HARMONICS_OFFSET, 1.0);
 
 	// Set default spline
 	GeData gdCurve(CUSTOMDATATYPE_SPLINE, DEFAULTVALUE);
@@ -166,6 +170,12 @@ Bool OscillatorNode::InitCalculation(GvNode* bn, GvCalc* calc, GvRun* run)
 
 Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 {
+	iferr_scope_handler
+	{
+		ApplicationOutput("@", err.GetMessage());
+		return false;
+	};
+
 	GvNode* nodePtr = static_cast<GvNode*>(node);
 
 	switch (type)
@@ -179,8 +189,8 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 			const Bool invert = dataPtr->GetBool(OSC_INVERT);
 			const Float pulseWidth = dataPtr->GetFloat(OSC_PULSEWIDTH);
 			const UInt harmonics = dataPtr->GetUInt32(OSC_HARMONICS);
-			const Float harmonicInterval = 2.0;
-			const Float harmonicIntervalOffset = 1.0;
+			const Float harmonicInterval = Max(dataPtr->GetFloat(OSC_HARMONICS_INTERVAL), 0.1);
+			const Float harmonicIntervalOffset = dataPtr->GetFloat(OSC_HARMONICS_OFFSET);
 
 			SplineData* customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 			if (!customFuncCurve)
@@ -279,15 +289,29 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 				return false;
 		}
 
+		GvPort* const portHarmonicsInterval = _ports.in_values[4]->GetPort();
+		Float harmonicsInterval = 0.0;
+		if (portHarmonicsInterval)
+		{
+			if (!portHarmonicsInterval->GetFloat(&harmonicsInterval, run))
+				return false;
+			harmonicsInterval = Max(harmonicsInterval, 0.1);
+		}
+
+		GvPort* const portHarmonicsOffset = _ports.in_values[5]->GetPort();
+		Float harmonicsOffset = 0.0;
+		if (portHarmonicsOffset)
+		{
+			if (!portHarmonicsOffset->GetFloat(&harmonicsOffset, run))
+				return false;
+		}
+
 		SplineData* customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 		if (!customFuncCurve)
 			iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
-		const Float harmonicInterval = 2.0;
-		const Float harmonicIntervalOffset = 1.0;
-
 		// Osillator input data
-		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, customFuncCurve);
+		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicsInterval, harmonicsOffset, customFuncCurve);
 		const Oscillator::WAVEFORMTYPE waveformType = (Oscillator::WAVEFORMTYPE)dataPtr->GetInt32(OSC_FUNCTION);
 
 		// Sample waveform
@@ -318,10 +342,12 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 	HideDescriptionElement(node, description, OSC_CUSTOMFUNC, func != FUNC_CUSTOM);
 	HideDescriptionElement(node, description, OSC_PULSEWIDTH, func != FUNC_PULSE && func != FUNC_PULSERND);
 	HideDescriptionElement(node, description, OSC_HARMONICS, func != FUNC_SAW_ANALOG && func != FUNC_SHARKTOOTH_ANALOG && func != FUNC_SQUARE_ANALOG && func != FUNC_ANALOG);
+	HideDescriptionElement(node, description, OSC_HARMONICS_INTERVAL, func != FUNC_ANALOG);
+	HideDescriptionElement(node, description, OSC_HARMONICS_OFFSET, func != FUNC_ANALOG);
 	HideDescriptionElement(node, description, OUTPORT_VALUE, true);
 	HideDescriptionElement(node, description, INPORT_X, true);
 
-	return true;
+	return SUPER::GetDDescription(node, description, flags);
 }
 
 Bool OscillatorNode::GetDParameter(GeListNode* node, const DescID& id, GeData& t_data, DESCFLAGS_GET& flags)
