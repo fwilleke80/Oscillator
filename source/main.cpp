@@ -9,8 +9,10 @@
 
 Bool PluginStart()
 {
-	ApplicationOutput("Oscillator 1.1"_s);
+	ApplicationOutput("Oscillator 1.2"_s);
 	if (!RegisterGvOscillator())
+		return false;
+	if (!RegisterOscillatorTag())
 		return false;
 
 	return true;

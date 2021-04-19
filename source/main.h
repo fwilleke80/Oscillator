@@ -5,5 +5,6 @@
 
 
 Bool RegisterGvOscillator();
+Bool RegisterOscillatorTag();
 
 #endif // MAIN_H__
