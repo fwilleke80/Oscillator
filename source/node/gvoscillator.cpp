@@ -69,12 +69,13 @@ class OscillatorNode : public GvOperatorData
 	INSTANCEOF(gvOscillator, GvOperatorData);
 
 public:
+	virtual Bool iCreateOperator(GvNode* bn) override;
 	virtual Bool Message(GeListNode* node, Int32 type, void* data) override;
 	virtual Bool GetDDescription(GeListNode* node, Description* description, DESCFLAGS_DESC& flags) override;
 	virtual Bool GetDParameter(GeListNode* node, const DescID& id, GeData& t_data, DESCFLAGS_GET& flags) override;
 
-	virtual Bool iCreateOperator(GvNode* bn) override;
 	virtual const String GetText(GvNode* bn) override;
+
 	virtual Bool InitCalculation(GvNode* bn, GvCalc* c, GvRun* r) override;
 	virtual void FreeCalculation(GvNode* bn, GvCalc* c) override;
 	virtual Bool Calculate(GvNode* bn, GvPort* port, GvRun* run, GvCalc* calc) override;
@@ -129,45 +130,6 @@ Bool OscillatorNode::iCreateOperator(GvNode* bn)
 	return SUPER::iCreateOperator(bn);
 }
 
-// Get node text (when "port names" if OFF)
-const String OscillatorNode::GetText(GvNode* bn)
-{
-	switch (bn->GetOpContainerInstance()->GetInt32(OSC_FUNCTION))
-	{
-		case FUNC_SINE:
-			return GeLoadString(IDS_FUNC_SINE);
-		case FUNC_COSINE:
-			return GeLoadString(IDS_FUNC_COSINE);
-		case FUNC_TRIANGLE:
-			return GeLoadString(IDS_FUNC_TRIANGLE);
-		case FUNC_SQUARE:
-			return GeLoadString(IDS_FUNC_SQUARE);
-		case FUNC_SAWTOOTH:
-			return GeLoadString(IDS_FUNC_SAWTOOTH);
-		case FUNC_PULSE:
-			return GeLoadString(IDS_FUNC_PULSE);
-		case FUNC_PULSERND:
-			return GeLoadString(IDS_FUNC_PULSERND);
-		case FUNC_SAW_ANALOG:
-			return GeLoadString(IDS_FUNC_SAW_ANALOG);
-		case FUNC_SHARKTOOTH_ANALOG:
-			return GeLoadString(IDS_FUNC_SHARKTOOTH_ANALOG);
-		case FUNC_SQUARE_ANALOG:
-			return GeLoadString(IDS_FUNC_SQUARE_ANALOG);
-		case FUNC_ANALOG:
-			return GeLoadString(IDS_FUNC_ANALOG);
-		case FUNC_CUSTOM:
-			return GeLoadString(IDS_FUNC_CUSTOM);
-	}
-
-	return GeLoadString(IDS_OSCILLATORNODE);
-}
-
-Bool OscillatorNode::InitCalculation(GvNode* bn, GvCalc* calc, GvRun* run)
-{
-	return GvBuildInValuesTable(bn, _ports, calc, run, g_input_ids); // or GV_EXISTING_PORTS or GV_DEFINED_PORTS instead of input_ids
-}
-
 Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 {
 	iferr_scope_handler
@@ -211,6 +173,85 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 	}
 
 	return true;
+}
+
+Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description, DESCFLAGS_DESC& flags)
+{
+	if (!description->LoadDescription(ID_OSCILLATORNODE))
+		return false;
+
+	flags |= DESCFLAGS_DESC::LOADED;
+
+	GvNode *nodePtr  = static_cast<GvNode*>(node);
+	BaseContainer *dataPtr = nodePtr->GetOpContainerInstance();
+
+	const Int32 func = dataPtr->GetInt32(OSC_FUNCTION);
+
+	HideDescriptionElement(node, description, OSC_CUSTOMFUNC, func != FUNC_CUSTOM);
+	HideDescriptionElement(node, description, OSC_PULSEWIDTH, func != FUNC_PULSE && func != FUNC_PULSERND);
+	HideDescriptionElement(node, description, OSC_HARMONICS, func != FUNC_SAW_ANALOG && func != FUNC_SHARKTOOTH_ANALOG && func != FUNC_SQUARE_ANALOG && func != FUNC_ANALOG);
+	HideDescriptionElement(node, description, OSC_HARMONICS_INTERVAL, func != FUNC_ANALOG);
+	HideDescriptionElement(node, description, OSC_HARMONICS_OFFSET, func != FUNC_ANALOG);
+	HideDescriptionElement(node, description, OUTPORT_VALUE, true);
+	HideDescriptionElement(node, description, INPORT_X, true);
+
+	return SUPER::GetDDescription(node, description, flags);
+}
+
+Bool OscillatorNode::GetDParameter(GeListNode* node, const DescID& id, GeData& t_data, DESCFLAGS_GET& flags)
+{
+	switch (id[0].id)
+	{
+		case OSC_WAVEFORMPREVIEW:
+		{
+			++_dirty;
+			BitmapButtonStruct bbs(static_cast<BaseList2D*>(node), id, _dirty);
+			t_data = GeData(CUSTOMDATATYPE_BITMAPBUTTON, bbs);
+			flags |= DESCFLAGS_GET::PARAM_GET;
+			break;
+		}
+	}
+
+	return SUPER::GetDParameter(node, id, t_data, flags);
+}
+
+// Get node text (when "port names" if OFF)
+const String OscillatorNode::GetText(GvNode* bn)
+{
+	switch (bn->GetOpContainerInstance()->GetInt32(OSC_FUNCTION))
+	{
+		case FUNC_SINE:
+			return GeLoadString(IDS_FUNC_SINE);
+		case FUNC_COSINE:
+			return GeLoadString(IDS_FUNC_COSINE);
+		case FUNC_TRIANGLE:
+			return GeLoadString(IDS_FUNC_TRIANGLE);
+		case FUNC_SQUARE:
+			return GeLoadString(IDS_FUNC_SQUARE);
+		case FUNC_SAWTOOTH:
+			return GeLoadString(IDS_FUNC_SAWTOOTH);
+		case FUNC_PULSE:
+			return GeLoadString(IDS_FUNC_PULSE);
+		case FUNC_PULSERND:
+			return GeLoadString(IDS_FUNC_PULSERND);
+		case FUNC_SAW_ANALOG:
+			return GeLoadString(IDS_FUNC_SAW_ANALOG);
+		case FUNC_SHARKTOOTH_ANALOG:
+			return GeLoadString(IDS_FUNC_SHARKTOOTH_ANALOG);
+		case FUNC_SQUARE_ANALOG:
+			return GeLoadString(IDS_FUNC_SQUARE_ANALOG);
+		case FUNC_ANALOG:
+			return GeLoadString(IDS_FUNC_ANALOG);
+		case FUNC_CUSTOM:
+			return GeLoadString(IDS_FUNC_CUSTOM);
+	}
+
+	return GeLoadString(IDS_OSCILLATORNODE);
+}
+
+Bool OscillatorNode::InitCalculation(GvNode* bn, GvCalc* calc, GvRun* run)
+{
+	return GvBuildInValuesTable(bn, _ports, calc, run, g_input_ids); // or GV_EXISTING_PORTS or GV_DEFINED_PORTS instead of input_ids
 }
 
 void OscillatorNode::FreeCalculation(GvNode *bn, GvCalc *c)
@@ -326,51 +367,6 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 	return false;
 }
 
-
-Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description, DESCFLAGS_DESC& flags)
-{
-	if (!description->LoadDescription(ID_OSCILLATORNODE))
-		return false;
-
-	flags |= DESCFLAGS_DESC::LOADED;
-
-	GvNode *nodePtr  = static_cast<GvNode*>(node);
-	BaseContainer *dataPtr = nodePtr->GetOpContainerInstance();
-
-	const Int32 func = dataPtr->GetInt32(OSC_FUNCTION);
-
-	HideDescriptionElement(node, description, OSC_CUSTOMFUNC, func != FUNC_CUSTOM);
-	HideDescriptionElement(node, description, OSC_PULSEWIDTH, func != FUNC_PULSE && func != FUNC_PULSERND);
-	HideDescriptionElement(node, description, OSC_HARMONICS, func != FUNC_SAW_ANALOG && func != FUNC_SHARKTOOTH_ANALOG && func != FUNC_SQUARE_ANALOG && func != FUNC_ANALOG);
-	HideDescriptionElement(node, description, OSC_HARMONICS_INTERVAL, func != FUNC_ANALOG);
-	HideDescriptionElement(node, description, OSC_HARMONICS_OFFSET, func != FUNC_ANALOG);
-	HideDescriptionElement(node, description, OUTPORT_VALUE, true);
-	HideDescriptionElement(node, description, INPORT_X, true);
-
-	return SUPER::GetDDescription(node, description, flags);
-}
-
-Bool OscillatorNode::GetDParameter(GeListNode* node, const DescID& id, GeData& t_data, DESCFLAGS_GET& flags)
-{
-	switch (id[0].id)
-	{
-		case OSC_WAVEFORMPREVIEW:
-		{
-			++_dirty;
-			BitmapButtonStruct bbs(static_cast<BaseList2D*>(node), id, _dirty);
-			t_data = GeData(CUSTOMDATATYPE_BITMAPBUTTON, bbs);
-			flags |= DESCFLAGS_GET::PARAM_GET;
-			break;
-		}
-	}
-
-	return SUPER::GetDParameter(node, id, t_data, flags);
-}
-
-
-///////////////////////////////////////////////////////////////////////////
-// Register stuff
-///////////////////////////////////////////////////////////////////////////
 
 // Create empty dummy icon, since it's never used by C4D anyway
 static BaseBitmap* GetMyGroupIcon()
