@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		019E8DC5262D810F0065D7C7 /* toscillator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 019E8DC4262D810F0065D7C7 /* toscillator.cpp */; };
 		A02383B8A06542540E010000 /* libmesh_misc.framework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A02383B8A06542540E000000 /* libmesh_misc.framework.a */; };
 		A02383B8A0B76C7F7D010000 /* gvoscillator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A02383B8A0B76C7F7D000000 /* gvoscillator.cpp */; };
 		A02383B8A0BB14C5CC010000 /* libgeom.framework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A02383B8A0BB14C5CC000000 /* libgeom.framework.a */; };
@@ -77,6 +78,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		019E8DC4262D810F0065D7C7 /* toscillator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = toscillator.cpp; sourceTree = "<group>"; };
 		A02383B8A000000000000000 /* debugbase.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = debugbase.xcconfig; path = ../../../frameworks/settings/debugbase.xcconfig; sourceTree = SOURCE_ROOT; };
 		A02383B8A000000000050000 /* releasebase.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = releasebase.xcconfig; path = ../../../frameworks/settings/releasebase.xcconfig; sourceTree = SOURCE_ROOT; };
 		A02383B8A00CD4D958000000 /* oscillator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = oscillator.h; path = ../source/lib/oscillator.h; sourceTree = SOURCE_ROOT; };
@@ -110,6 +112,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		019E8DC3262D810F0065D7C7 /* tag */ = {
+			isa = PBXGroup;
+			children = (
+				019E8DC4262D810F0065D7C7 /* toscillator.cpp */,
+			);
+			path = tag;
+			sourceTree = "<group>";
+		};
 		A02383B8A000000000140000 /* libs */ = {
 			isa = PBXGroup;
 			children = (
@@ -217,6 +227,7 @@
 		A02383B8A0CA90681B000000 /* source */ = {
 			isa = PBXGroup;
 			children = (
+				019E8DC3262D810F0065D7C7 /* tag */,
 				A02383B8A0BDAFE291000000 /* lib */,
 				A02383B8A0F84D6F76000000 /* node */,
 				A02383B8A0E921D362000000 /* main.cpp */,
@@ -388,6 +399,7 @@
 				A02383B8A0D80552BB010000 /* interface_registration.cpp in Sources */,
 				A02383B8A0D93CCD9F010000 /* register.cpp in Sources */,
 				A02383B8A0E921D362010000 /* main.cpp in Sources */,
+				019E8DC5262D810F0065D7C7 /* toscillator.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
