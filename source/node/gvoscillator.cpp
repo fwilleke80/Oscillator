@@ -172,7 +172,7 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 		}
 	}
 
-	return true;
+	return SUPER::Message(node, type, data);
 }
 
 Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description, DESCFLAGS_DESC& flags)
