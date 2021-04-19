@@ -2,6 +2,7 @@ STRINGTABLE
 {
 	IDS_OSCILLATORNODE       "Oscillator";
 	IDS_OSCILLATOR_NODEGROUP "Oscillator";
+	IDS_OSCILLATORTAG        "Oscillator";
 
 	IDS_FUNC_SINE            "Sine";
 	IDS_FUNC_COSINE          "Cosine";
