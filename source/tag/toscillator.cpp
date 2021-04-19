@@ -68,6 +68,13 @@ Bool OscillatorTag::Init(GeListNode* node)
 	dataRef.SetFloat(OSC_HARMONICS_INTERVAL, 1.0);
 	dataRef.SetFloat(OSC_HARMONICS_OFFSET, 1.0);
 
+	dataRef.SetBool(OSCTAG_OUTPUT_POS_ENABLE, true);
+	dataRef.SetVector(OSCTAG_OUTPUT_POS, Vector(0.0, 100.0, 0.0));
+	dataRef.SetBool(OSCTAG_OUTPUT_SCALE_ENABLE, true);
+	dataRef.SetVector(OSCTAG_OUTPUT_SCALE, Vector(1.0, 1.0, 1.0));
+	dataRef.SetBool(OSCTAG_OUTPUT_ROT_ENABLE, true);
+	dataRef.SetVector(OSCTAG_OUTPUT_ROT, Vector(DegToRad(360.0)));
+
 	// Set default spline
 	GeData gdCurve(CUSTOMDATATYPE_SPLINE, DEFAULTVALUE);
 	SplineData* splineCurve = static_cast<SplineData*>(gdCurve.GetCustomDataType(CUSTOMDATATYPE_SPLINE));
@@ -165,12 +172,6 @@ Bool OscillatorTag::GetDParameter(GeListNode* node, const DescID& id, GeData& t_
 
 EXECUTIONRESULT OscillatorTag::Execute(BaseTag* tag, BaseDocument* doc, BaseObject* op, BaseThread* bt, Int32 priority, EXECUTIONFLAGS flags)
 {
-	iferr_scope_handler
-	{
-		ApplicationOutput("@", err.GetMessage());
-		return EXECUTIONRESULT::OUTOFMEMORY;
-	};
-
 	const BaseContainer& dataRef = tag->GetDataInstanceRef();
 
 	const Oscillator::VALUERANGE outputRange = (Oscillator::VALUERANGE)dataRef.GetInt32(OSC_RANGE);
@@ -184,7 +185,10 @@ EXECUTIONRESULT OscillatorTag::Execute(BaseTag* tag, BaseDocument* doc, BaseObje
 
 	SplineData* customFuncCurve = (SplineData*)(dataRef.GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 	if (!customFuncCurve)
-		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
+	{
+		ApplicationOutput("customFuncCurve is nullptr!");
+		return EXECUTIONRESULT::OUTOFMEMORY;
+	}
 
 	// Osillator input data
 	Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicsInterval, harmonicsOffset, customFuncCurve);
@@ -194,9 +198,33 @@ EXECUTIONRESULT OscillatorTag::Execute(BaseTag* tag, BaseDocument* doc, BaseObje
 	Float waveformValue = _osc.SampleWaveform(inputTime * inputFrequency, waveformType, waveformParameters);
 
 	// Apply result to object
-	Vector opPos = op->GetRelPos();
-	opPos.y = waveformValue;
-	op->SetRelPos(opPos);
+	const Bool enablePos = dataRef.GetBool(OSCTAG_OUTPUT_POS_ENABLE);
+	const Vector vectorPos = dataRef.GetVector(OSCTAG_OUTPUT_POS);
+	const Bool enableScale = dataRef.GetBool(OSCTAG_OUTPUT_SCALE_ENABLE);
+	const Vector vectorScale = dataRef.GetVector(OSCTAG_OUTPUT_SCALE);
+	const Bool enableRot = dataRef.GetBool(OSCTAG_OUTPUT_ROT_ENABLE);
+	const Vector vectorRot = dataRef.GetVector(OSCTAG_OUTPUT_ROT);
+
+	if (enablePos)
+	{
+		Vector opPos = op->GetRelPos();
+		opPos = waveformValue * vectorPos;
+		op->SetRelPos(opPos);
+	}
+
+	if (enableScale)
+	{
+		Vector opScale = op->GetRelScale();
+		opScale = Vector(1.0) + waveformValue * vectorScale;
+		op->SetRelScale(opScale);
+	}
+
+	if (enableRot)
+	{
+		Vector opRot = op->GetRelRot();
+		opRot = waveformValue * vectorRot;
+		op->SetRelRot(opRot);
+	}
 
 	return EXECUTIONRESULT::OK;
 }
