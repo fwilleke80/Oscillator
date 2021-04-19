@@ -363,7 +363,31 @@ public:
 		const Float fHarmonics = (Float)(parameters.harmonics + 1);
 		const Float xValue = FreqToAngularVelocity(x);
 
-		for (Float n = 1.0; n < fHarmonics; n = n + 2.0)
+		for (Float n = 1.0; n < fHarmonics; n += 2.0)
+		{
+			result += Sin(n * xValue) / n;
+		}
+
+		result *= TWOBYPI;
+
+		if (!parameters.invert)
+			result *= -1.0;
+
+		if (parameters.valueRange == VALUERANGE::RANGE01)
+			result = result * 0.5 + 0.5;
+
+		return result;
+	}
+
+	MAXON_ATTRIBUTE_FORCE_INLINE Float GetAnalog(Float x, const WaveformParameters& parameters) const
+	{
+		const Float fHarmonics = (Float)(parameters.harmonics);
+		const Float xValue = FreqToAngularVelocity(x);
+
+		Float result = 0.0;
+//		Float result = Sin(xValue); // Fundamental
+
+		for (Float n = parameters.harmonicIntervalOffset; n < fHarmonics * parameters.harmonicInterval; n += parameters.harmonicInterval)
 		{
 			result += Sin(n * xValue) / n;
 		}
@@ -394,31 +418,6 @@ public:
 
 		return result;
 	}
-
-	MAXON_ATTRIBUTE_FORCE_INLINE Float GetAnalog(Float x, const WaveformParameters& parameters) const
-	{
-		const Float fHarmonics = (Float)(parameters.harmonics + 1);
-		const Float xValue = FreqToAngularVelocity(x);
-
-		Float result = Sin(xValue); // Fundamental
-
-		// Harmonics
-		for (Float n = 2.0; n < fHarmonics; n = n + 2.0)
-		{
-			result += Sin(n * xValue) / n;
-		}
-
-		result *= TWOBYPI;
-
-		if (!parameters.invert)
-			result *= -1.0;
-
-		if (parameters.valueRange == VALUERANGE::RANGE01)
-			result = result * 0.5 + 0.5;
-
-		return result;
-	}
-
 
 	///
 	/// \brief Returns any of the waveforms, depending on oscType
