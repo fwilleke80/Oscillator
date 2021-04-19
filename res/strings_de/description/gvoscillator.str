@@ -1,10 +1,10 @@
 STRINGTABLE gvOscillator
 {
-	gvOscillator          "Oszillator-Node";
+	gvOscillator           "Oszillator-Node";
 
-	INPORT_X              "x";
-	OUTPORT_VALUE         "Wert";
-	OSC_FUNCTION          "Funktion";
+	INPORT_X               "x";
+	OUTPORT_VALUE          "Wert";
+	OSC_FUNCTION           "Funktion";
 		FUNC_SINE              "Sinus";
 		FUNC_COSINE            "Cosinus";
 		FUNC_SAWTOOTH          "S\u00E4gezahn";
@@ -17,12 +17,14 @@ STRINGTABLE gvOscillator
 		FUNC_SQUARE_ANALOG     "Analoges Rechteck";
 		FUNC_ANALOG            "Analog";
 		FUNC_CUSTOM	           "Eigene Kurve";
-	OSC_RANGE             "Wertebereich";
+	OSC_RANGE              "Wertebereich";
 		RANGE_01               "0 .. 1";
 		RANGE_11               "-1 .. 1";
-	OSC_CUSTOMFUNC        "Eigene Kurve";
-	OSC_INVERT            "Invertieren";
-	OSC_PULSEWIDTH        "Impulsbreite";
-	OSC_INPUTSCALE        "Input Scale";
-	OSC_HARMONICS         "Obert\u00f6ne";
+	OSC_CUSTOMFUNC         "Eigene Kurve";
+	OSC_INVERT             "Invertieren";
+	OSC_PULSEWIDTH         "Impulsbreite";
+	OSC_INPUTSCALE         "Input Scale";
+	OSC_HARMONICS          "Obert\u00f6ne";
+	OSC_HARMONICS_INTERVAL "Obertonintervall";
+	OSC_HARMONICS_OFFSET   "Obertonversatz";
 }
