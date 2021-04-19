@@ -1,6 +1,7 @@
 #ifndef OSCILLATOR_H__
 #define OSCILLATOR_H__
 
+#include "customgui_splinecontrol.h"
 #include "c4d_tools.h"
 #include "c4d_basebitmap.h"
 #include "c4d_general.h"
@@ -24,6 +25,28 @@ MAXON_ATTRIBUTE_FORCE_INLINE Float FreqToAngularVelocity(Float h)
 	return h * 2.0 * PI;
 }
 
+MAXON_ATTRIBUTE_FORCE_INLINE Bool EqualSplineDatas(const SplineData* sp1, const SplineData* sp2)
+{
+	if (!sp1 || !sp2)
+		return false;
+
+	// Compare knot counts
+	if (sp1->GetKnotCount() != sp2->GetKnotCount())
+		return false;
+
+	// Compare knots
+	for (Int32 knotIndex = 0; knotIndex < sp1->GetKnotCount(); ++knotIndex)
+	{
+		const CustomSplineKnot* k1 = sp1->GetKnot(knotIndex);
+		const CustomSplineKnot* k2 = sp2->GetKnot(knotIndex);
+		if (k1 != k2)
+			return false;
+	}
+
+
+	return true;
+}
+
 ///
 /// \brief A class that generates waveforms
 ///
@@ -45,7 +68,8 @@ public:
 		SAW_ANALOG = 7,
 		SHARKTOOTH_ANALOG = 8,
 		SQUARE_ANALOG = 9,
-		ANALOG = 10
+		ANALOG = 10,
+		CUSTOMSPLINE = 100
 	} MAXON_ENUM_LIST_CLASS(WAVEFORMTYPE);
 
 	///
@@ -64,34 +88,34 @@ public:
 	{
 		VALUERANGE valueRange; ///< The output value range. Either [0 .. 1] or [-1 .. 1]
 		Bool invert; ///< If this is true, the output phase will be inverted
-		Bool random; ///< If this is true, GetPulse() will return a noise-based pulse
 		Float pulseWidth; ///< Defines the pulse width of GetPulse(). [0 .. 1].
 		UInt harmonics; ///< Defines the nmber of harmonics in GetAnalogX(). [1 .. infinite]
 		Float harmonicInterval; ///< Harmonic multiplication will be increased by this value for each harmonic
 		Float harmonicIntervalOffset; ///< Harmonic multiplication will start with this value before it is increased
+		SplineData* customCurve; ///< Pointer to a spline for the custom waveform
 
 		/// \brief Default vonstructor
-		WaveformParameters() : valueRange(VALUERANGE::RANGE01), invert(false), random(false), pulseWidth(0.0), harmonics(0), harmonicInterval(0.0), harmonicIntervalOffset(0.0)
+		WaveformParameters() : valueRange(VALUERANGE::RANGE01), invert(false), pulseWidth(0.0), harmonics(0), harmonicInterval(0.0), harmonicIntervalOffset(0.0), customCurve(nullptr)
 		{ }
 
 		/// \brief Copy constructor
-		WaveformParameters(const WaveformParameters& src) : valueRange(src.valueRange), invert(src.invert), random(src.random), pulseWidth(src.pulseWidth), harmonics(src.harmonics), harmonicInterval(src.harmonicInterval), harmonicIntervalOffset(src.harmonicIntervalOffset)
+		WaveformParameters(const WaveformParameters& src) : valueRange(src.valueRange), invert(src.invert), pulseWidth(src.pulseWidth), harmonics(src.harmonics), harmonicInterval(src.harmonicInterval), harmonicIntervalOffset(src.harmonicIntervalOffset), customCurve(src.customCurve)
 		{ }
 
 		/// \brief Construct from values
-		WaveformParameters(VALUERANGE t_valueRange, Bool t_invert, Bool t_random, Float t_pulseWidth, UInt t_harmonics, Float t_harmonicInterval, Float t_harmonicIntervalOffset) : valueRange(t_valueRange), invert(t_invert), random(t_random), pulseWidth(t_pulseWidth), harmonics(t_harmonics), harmonicInterval(t_harmonicInterval), harmonicIntervalOffset(t_harmonicIntervalOffset)
+		WaveformParameters(VALUERANGE t_valueRange, Bool t_invert, Float t_pulseWidth, UInt t_harmonics, Float t_harmonicInterval, Float t_harmonicIntervalOffset, SplineData* t_customCurve) : valueRange(t_valueRange), invert(t_invert), pulseWidth(t_pulseWidth), harmonics(t_harmonics), harmonicInterval(t_harmonicInterval), harmonicIntervalOffset(t_harmonicIntervalOffset), customCurve(t_customCurve)
 		{ }
 
 		/// \brief Equals operator
 		Bool operator ==(const WaveformParameters& c) const
 		{
-			return valueRange == c.valueRange && invert == c.invert && random == c.random && pulseWidth == c.pulseWidth && harmonics == c.harmonics && harmonicInterval == c.harmonicInterval && harmonicIntervalOffset == c.harmonicIntervalOffset;
+			return valueRange == c.valueRange && invert == c.invert && pulseWidth == c.pulseWidth && harmonics == c.harmonics && harmonicInterval == c.harmonicInterval && harmonicIntervalOffset == c.harmonicIntervalOffset && (customCurve != nullptr && c.customCurve != nullptr) && (EqualSplineDatas(customCurve, c.customCurve));
 		}
 
 		/// \brief Not-equals operator
 		Bool operator !=(const WaveformParameters& c) const
 		{
-			return valueRange != c.valueRange || invert != c.invert || random != c.random || pulseWidth != c.pulseWidth || harmonics != c.harmonics || harmonicInterval != c.harmonicInterval || harmonicIntervalOffset != c.harmonicIntervalOffset;
+			return valueRange != c.valueRange || invert != c.invert || pulseWidth != c.pulseWidth || harmonics != c.harmonics || harmonicInterval != c.harmonicInterval || harmonicIntervalOffset != c.harmonicIntervalOffset || (customCurve != c.customCurve) || (!EqualSplineDatas(customCurve, c.customCurve));
 		}
 	};
 
@@ -355,6 +379,21 @@ public:
 		return result;
 	}
 
+	MAXON_ATTRIBUTE_FORCE_INLINE Float GetCustomSpline(Float x, const WaveformParameters& parameters) const
+	{
+		if (!parameters.customCurve)
+			return 0.0;
+
+		Float result = parameters.customCurve->GetPoint(GetSawtooth(x, WaveformParameters())).y;
+
+		if (parameters.invert)
+			result = 1.0 - result;
+
+		if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+			result = result * 2.0 - 1.0;
+
+		return result;
+	}
 
 	MAXON_ATTRIBUTE_FORCE_INLINE Float GetAnalog(Float x, const WaveformParameters& parameters) const
 	{
@@ -379,6 +418,7 @@ public:
 
 		return result;
 	}
+
 
 	///
 	/// \brief Returns any of the waveforms, depending on oscType
@@ -409,6 +449,8 @@ public:
 				return GetAnalogSquare(x, parameters);
 			case WAVEFORMTYPE::ANALOG:
 				return GetAnalog(x, parameters);
+			case WAVEFORMTYPE::CUSTOMSPLINE:
+				return GetCustomSpline(x, parameters);
 		}
 		return 0.0;
 	}
@@ -447,12 +489,13 @@ public:
 		bmp->SetPen(32, 255, 16);
 		static const Float previewScaleX = 2.0;
 		const Float iw1 = Inverse((Float)(w - 1));
+		const Int32 h1 = h - 1;
 		Int32 yPrevious = NOTOK;
 		for (Int32 x = 0; x < w; ++x)
 		{
 			const Float xSample = (Float)x * iw1 * previewScaleX;
-			Float y = (Int32)(SampleWaveform(xSample, oscType, parameters) * (Float)(h - 1));
-			if (oscType == Oscillator::WAVEFORMTYPE::SAW_ANALOG || oscType == Oscillator::WAVEFORMTYPE::SHARKTOOTH_ANALOG || oscType == Oscillator::WAVEFORMTYPE::SQUARE_ANALOG)
+			Float y = (Int32)(SampleWaveform(xSample, oscType, parameters) * (Float)(h1));
+			if (oscType == Oscillator::WAVEFORMTYPE::SAW_ANALOG || oscType == Oscillator::WAVEFORMTYPE::SHARKTOOTH_ANALOG)
 			{
 				y *= 0.8; // Scale down, so we don't draw outside of area
 				if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
@@ -464,7 +507,7 @@ public:
 				y = y * 0.45 + h * 0.5;  // Vertically center
 			}
 
-			const Int32 yDraw = h - 1 - (Int32)y;
+			const Int32 yDraw = ClampValue(h1 - (Int32)y, 0, h1);
 
 			if (Abs(yDraw - yPrevious) > 1 && x > 0)
 				bmp->Line(x - 1, yPrevious, x, yDraw);

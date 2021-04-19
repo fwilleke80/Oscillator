@@ -148,6 +148,10 @@ const String OscillatorNode::GetText(GvNode* bn)
 			return GeLoadString(IDS_FUNC_SAW_ANALOG);
 		case FUNC_SHARKTOOTH_ANALOG:
 			return GeLoadString(IDS_FUNC_SHARKTOOTH_ANALOG);
+		case FUNC_SQUARE_ANALOG:
+			return GeLoadString(IDS_FUNC_SQUARE_ANALOG);
+		case FUNC_ANALOG:
+			return GeLoadString(IDS_FUNC_ANALOG);
 		case FUNC_CUSTOM:
 			return GeLoadString(IDS_FUNC_CUSTOM);
 	}
@@ -175,8 +179,14 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 			const Bool invert = dataPtr->GetBool(OSC_INVERT);
 			const Float pulseWidth = dataPtr->GetFloat(OSC_PULSEWIDTH);
 			const UInt harmonics = dataPtr->GetUInt32(OSC_HARMONICS);
+			const Float harmonicInterval = 2.0;
+			const Float harmonicIntervalOffset = 1.0;
 
-			Oscillator::WaveformParameters parameters(valueRange, invert, false, pulseWidth, harmonics);
+			SplineData* customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
+			if (!customFuncCurve)
+				iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
+
+			Oscillator::WaveformParameters parameters(valueRange, invert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, customFuncCurve);
 
 			DescriptionGetBitmap* dgb = (DescriptionGetBitmap*)data;
 			dgb->_width = 400;
@@ -188,27 +198,7 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 
 			return true;
 		}
-
 	}
-
-//	switch (type)
-//	{
-//		case MSG_DESCRIPTION_POSTSETPARAMETER:
-//		{
-//			DescriptionCommand *dc = (DescriptionCommand*)data;
-//			CurveDrawData cdd;
-//			cdd.bInvert = dataPtr->GetBool(OSC_INVERT);
-//			cdd.lCurveType = dataPtr->GetInt32(OSC_FUNCTION);
-//			cdd.range = (Oscillator::VALUERANGE)dataPtr->GetInt32(OSC_RANGE);
-//			cdd.rPulseWidth = dataPtr->GetFloat(OSC_PULSEWIDTH);
-
-//			GeData gd (CUSTOMDATATYPE_CURVEPREVIEW, DEFAULTVALUE);
-//			CurvePreviewData *cpd = (CurvePreviewData*) gd.GetCustomDataType(CUSTOMDATATYPE_CURVEPREVIEW);
-//			cpd->SetCurveDrawData(cdd);
-//			dataPtr->SetData(OSC_PREVIEW, gd);
-//			break;
-//		}
-//	}
 
 	return true;
 }
@@ -293,87 +283,15 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 		if (!customFuncCurve)
 			iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
-		//		// Do the sum calculation for the long output
-		//		if (run->IsIterationPath())
-		//			GePrint("Node is connected to an iterator"); // maybe want to act special here
+		const Float harmonicInterval = 2.0;
+		const Float harmonicIntervalOffset = 1.0;
 
-		const Int32 oscFunction = dataPtr->GetInt32(OSC_FUNCTION);
+		// Osillator input data
+		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, customFuncCurve);
+		const Oscillator::WAVEFORMTYPE waveformType = (Oscillator::WAVEFORMTYPE)dataPtr->GetInt32(OSC_FUNCTION);
 
-		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, oscFunction == FUNC_PULSERND, pulseWidth, harmonics);
-
-		Float waveformValue = 0.0;
-		switch (oscFunction)
-		{
-			case FUNC_SINE:
-			{
-				waveformValue = _osc.GetSin(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_COSINE:
-			{
-				waveformValue = _osc.GetCos(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_SAWTOOTH:
-			{
-				waveformValue = _osc.GetSawtooth(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_SQUARE:
-			{
-				waveformValue = _osc.GetSquare(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_TRIANGLE:
-			{
-				waveformValue = _osc.GetTriangle(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_PULSE:
-			{
-				waveformValue = _osc.GetPulse(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_PULSERND:
-			{
-				waveformValue = _osc.GetPulseRandom(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_SAW_ANALOG:
-			{
-				waveformValue = _osc.GetAnalogSaw(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_SHARKTOOTH_ANALOG:
-			{
-				waveformValue = _osc.GetAnalogSharktooth(inputValue * frequency, waveformParameters);
-				break;
-			}
-
-			case FUNC_CUSTOM:
-			{
-				if (!customFuncCurve)
-					iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
-
-				waveformValue = customFuncCurve->GetPoint(_osc.GetSawtooth(inputValue * frequency, Oscillator::WaveformParameters(Oscillator::VALUERANGE::RANGE01, false, false, 0.0, 0))).y;
-
-				if (outputInvert)
-					waveformValue = 1.0 - waveformValue;
-
-				if (outputRange == Oscillator::VALUERANGE::RANGE11)
-					waveformValue = waveformValue * 2.0 - 1.0;
-
-				break;
-			}
-		}
+		// Sample waveform
+		Float waveformValue = _osc.SampleWaveform(inputValue * frequency, waveformType, waveformParameters);
 
 		// Set waveform value to output port
 		port->SetFloat(waveformValue, run);
@@ -399,7 +317,7 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 
 	HideDescriptionElement(node, description, OSC_CUSTOMFUNC, func != FUNC_CUSTOM);
 	HideDescriptionElement(node, description, OSC_PULSEWIDTH, func != FUNC_PULSE && func != FUNC_PULSERND);
-	HideDescriptionElement(node, description, OSC_HARMONICS, func != FUNC_SAW_ANALOG && func != FUNC_SHARKTOOTH_ANALOG);
+	HideDescriptionElement(node, description, OSC_HARMONICS, func != FUNC_SAW_ANALOG && func != FUNC_SHARKTOOTH_ANALOG && func != FUNC_SQUARE_ANALOG && func != FUNC_ANALOG);
 	HideDescriptionElement(node, description, OUTPORT_VALUE, true);
 	HideDescriptionElement(node, description, INPORT_X, true);
 

@@ -12,5 +12,7 @@ STRINGTABLE
 	IDS_FUNC_PULSERND        "Random Pulse";
 	IDS_FUNC_SAW_ANALOG      "Analogue Sawtooth";
 	IDS_FUNC_SHARKTOOTH_ANALOG "Analogue Sharktooth";
+	IDS_FUNC_SQUARE_ANALOG     "Analogue Square";
+	IDS_FUNC_ANALOG            "Analogue";
 	IDS_FUNC_CUSTOM          "Custom Curve";
 }

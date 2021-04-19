@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A02383B8A02B03DE93010000 /* oscillator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A02383B8A02B03DE93000000 /* oscillator.cpp */; };
 		A02383B8A06542540E010000 /* libmesh_misc.framework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A02383B8A06542540E000000 /* libmesh_misc.framework.a */; };
 		A02383B8A0B76C7F7D010000 /* gvoscillator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A02383B8A0B76C7F7D000000 /* gvoscillator.cpp */; };
 		A02383B8A0BB14C5CC010000 /* libgeom.framework.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A02383B8A0BB14C5CC000000 /* libgeom.framework.a */; };
@@ -82,7 +81,6 @@
 		A02383B8A000000000050000 /* releasebase.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = releasebase.xcconfig; path = ../../../frameworks/settings/releasebase.xcconfig; sourceTree = SOURCE_ROOT; };
 		A02383B8A00CD4D958000000 /* oscillator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = oscillator.h; path = ../source/lib/oscillator.h; sourceTree = SOURCE_ROOT; };
 		A02383B8A01837B5E7000000 /* main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = main.h; path = ../source/main.h; sourceTree = SOURCE_ROOT; };
-		A02383B8A02B03DE93000000 /* oscillator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = oscillator.cpp; path = ../source/lib/oscillator.cpp; sourceTree = SOURCE_ROOT; };
 		A02383B8A0448F46FA000000 /* c4d_symbols.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = c4d_symbols.h; path = ../res/c4d_symbols.h; sourceTree = SOURCE_ROOT; };
 		A02383B8A06542540E020000 /* mesh_misc.framework.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = mesh_misc.framework.xcodeproj; path = ../../../frameworks/mesh_misc.framework/project/mesh_misc.framework.xcodeproj; sourceTree = SOURCE_ROOT; };
 		A02383B8A0B76C7F7D000000 /* gvoscillator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gvoscillator.cpp; path = ../source/node/gvoscillator.cpp; sourceTree = SOURCE_ROOT; };
@@ -210,7 +208,6 @@
 		A02383B8A0BDAFE291000000 /* lib */ = {
 			isa = PBXGroup;
 			children = (
-				A02383B8A02B03DE93000000 /* oscillator.cpp */,
 				A02383B8A00CD4D958000000 /* oscillator.h */,
 			);
 			name = lib;
@@ -387,7 +384,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A02383B8A02B03DE93010000 /* oscillator.cpp in Sources */,
 				A02383B8A0B76C7F7D010000 /* gvoscillator.cpp in Sources */,
 				A02383B8A0D80552BB010000 /* interface_registration.cpp in Sources */,
 				A02383B8A0D93CCD9F010000 /* register.cpp in Sources */,
