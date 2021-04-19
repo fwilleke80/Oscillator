@@ -1,0 +1,35 @@
+STRINGTABLE toscillator
+{
+	toscillator           "Oscillator Tag";
+
+	OSC_FUNCTION           "Function";
+		FUNC_SINE              "Sine";
+		FUNC_COSINE            "Cosine";
+		FUNC_SAWTOOTH          "Sawtooth";
+		FUNC_SQUARE            "Square";
+		FUNC_TRIANGLE          "Triangle";
+		FUNC_PULSE             "Pulse";
+		FUNC_PULSERND          "Random Pulse";
+		FUNC_SAW_ANALOG        "Analogue Sawtooth";
+		FUNC_SHARKTOOTH_ANALOG "Analogue Sharktooth";
+		FUNC_SQUARE_ANALOG     "Analogue Square";
+		FUNC_ANALOG            "Analogue";
+		FUNC_CUSTOM            "Custom Curve";
+	OSC_RANGE              "Range";
+		RANGE_01               "0 .. 1";
+		RANGE_11               "-1 .. 1";
+	OSC_CUSTOMFUNC         "Custom Curve";
+	OSC_INVERT             "Invert";
+	OSC_PULSEWIDTH         "Pulse Width";
+	OSC_INPUTSCALE         "Input Scale";
+	OSC_HARMONICS          "Harmonics";
+	OSC_HARMONICS_INTERVAL "Harmonics Interval";
+	OSC_HARMONICS_OFFSET   "Harmonics Offset";
+
+	OSCTAG_OUTPUT_POS_ENABLE   "Position";
+	OSCTAG_OUTPUT_POS          "Strength";
+	OSCTAG_OUTPUT_SCALE_ENABLE "Scale";
+	OSCTAG_OUTPUT_SCALE        "Strength";
+	OSCTAG_OUTPUT_ROT_ENABLE   "Rotation";
+	OSCTAG_OUTPUT_ROT          "Strength";
+}
