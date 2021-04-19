@@ -409,5 +409,5 @@ Bool RegisterGvOscillator()
 	if (!GvRegisterOpGroupType(&mygroup, sizeof(mygroup)))
 		return false;
 
-	return GvRegisterOperatorPlugin(ID_OSCILLATORNODE, name, 0, OscillatorNode::Alloc, "gvoscillator"_s, 0, ID_GV_OPCLASS_TYPE_GENERAL, ID_OSCILLATOR_NODEGROUP, ID_GV_IGNORE_OWNER, AutoBitmap("gvoscillator.tif"_s));
+	return GvRegisterOperatorPlugin(ID_OSCILLATORNODE, name, 0, OscillatorNode::Alloc, "gvoscillator"_s, 0, ID_GV_OPCLASS_TYPE_GENERAL, ID_OSCILLATOR_NODEGROUP, ID_GV_IGNORE_OWNER, AutoBitmap("oscillator.tif"_s));
 }
