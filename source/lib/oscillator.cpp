@@ -72,9 +72,8 @@ Float Oscillator::GetTriangle(Float x, const WaveformParameters& parameters) con
 		if (parameters.invert)
 			result = 1.0 - result;
 	}
-	else
+	else if (parameters.invert)
 	{
-		if (parameters.invert)
 			result *= -1.0;
 	}
 
@@ -86,10 +85,15 @@ Float Oscillator::GetSquare(Float x, const WaveformParameters& parameters) const
 	Float result = Sign(Sin(FreqToAngularVelocity(x)));
 
 	if (parameters.invert)
-		result = 1.0 - result;
-
-	if (parameters.valueRange == VALUERANGE::RANGE11)
-		result = result * 2.0 - 1.0;
+	{
+		result = result * 0.5 + 0.5;
+		if (parameters.invert)
+			result = 1.0 - result;
+	}
+	else if (parameters.invert)
+	{
+		result *= -1.0;
+	}
 
 	return result;
 }
@@ -185,11 +189,15 @@ BaseBitmap* Oscillator::RenderToBitmap(Int32 w, Int32 h, Oscillator::WAVEFORMTYP
 
 	// Grid
 	bmp->SetPen(8, 48, 8);
+	const Int32 verticalGridLiens = 4;
 	if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
 		bmp->Line(0, h / 2, w - 1, h / 2);
 	else
 		bmp->Line(0, h - 1, w - 1, h - 1);
-	bmp->Line(0, 0, 0, h - 1);
+	for (Int32 x = 0; x < w - 1; x = x + w / verticalGridLiens)
+	{
+		bmp->Line(x, 0, x, h - 1);
+	}
 
 	// Waveform
 	bmp->SetPen(32, 255, 16);
@@ -200,10 +208,17 @@ BaseBitmap* Oscillator::RenderToBitmap(Int32 w, Int32 h, Oscillator::WAVEFORMTYP
 	{
 		const Float xSample = (Float)x * iw1 * previewScaleX;
 		Float y = (Int32)(SampleWaveform(xSample, oscType, parameters) * (Float)(h - 1));
-		if (oscType == Oscillator::WAVEFORMTYPE::SAW_ANALOG)
-			y *= 0.9;
-		if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
-			y = y * 0.5 + h * 0.5;
+		if (oscType == Oscillator::WAVEFORMTYPE::SAW_ANALOG || oscType == Oscillator::WAVEFORMTYPE::SHARKTOOTH_ANALOG)
+		{
+			y *= 0.8; // Scale down, so we don't draw outside of area
+			if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+				y = y * 0.4 + h * 0.5; // Vertically center
+		}
+		else if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+		{
+			y *= 0.9; // Scale down a little, so we don't draw outside of area
+			y = y * 0.45 + h * 0.5;  // Vertically center
+		}
 
 		const Int32 yDraw = h - 1 - (Int32)y;
 
