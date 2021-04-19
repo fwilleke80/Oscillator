@@ -25,7 +25,7 @@ MAXON_ATTRIBUTE_FORCE_INLINE Float FreqToAngularVelocity(Float h)
 	return h * 2.0 * PI;
 }
 
-MAXON_ATTRIBUTE_FORCE_INLINE Bool EqualSplineDatas(const SplineData* sp1, const SplineData* sp2)
+MAXON_ATTRIBUTE_FORCE_INLINE Bool EqualSplineDatas(SplineData* sp1, SplineData* sp2)
 {
 	if (!sp1 || !sp2)
 		return false;
@@ -37,8 +37,8 @@ MAXON_ATTRIBUTE_FORCE_INLINE Bool EqualSplineDatas(const SplineData* sp1, const 
 	// Compare knots
 	for (Int32 knotIndex = 0; knotIndex < sp1->GetKnotCount(); ++knotIndex)
 	{
-		const CustomSplineKnot* k1 = sp1->GetKnot(knotIndex);
-		const CustomSplineKnot* k2 = sp2->GetKnot(knotIndex);
+		CustomSplineKnot* k1 = sp1->GetKnot(knotIndex);
+		CustomSplineKnot* k2 = sp2->GetKnot(knotIndex);
 		if (k1 != k2)
 			return false;
 	}
