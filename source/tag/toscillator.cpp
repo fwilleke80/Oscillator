@@ -188,7 +188,11 @@ EXECUTIONRESULT OscillatorTag::Execute(BaseTag* tag, BaseDocument* doc, BaseObje
 	const Float inputFrequency = dataRef.GetFloat(OSC_INPUTSCALE);
 	const Float slewUp = dataRef.GetFloat(FILTER_SLEW_UP);
 	const Float slewDown = dataRef.GetFloat(FILTER_SLEW_DOWN);
-	const Float inputTime = doc->GetTime().Get();
+
+	// Time
+	const Float fps = doc->GetFps();
+	const BaseTime currentTime = doc->GetTime();
+	const Float inputTime = currentTime.Get();
 
 	SplineData* customFuncCurve = (SplineData*)(dataRef.GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 	if (!customFuncCurve)
@@ -202,8 +206,7 @@ EXECUTIONRESULT OscillatorTag::Execute(BaseTag* tag, BaseDocument* doc, BaseObje
 	const Oscillator::WAVEFORMTYPE waveformType = (Oscillator::WAVEFORMTYPE)dataRef.GetInt32(OSC_FUNCTION);
 
 	// Reset filter if necessary
-	const Int32 currentFrame = doc->GetTime().GetFrame(doc->GetFps());
-	if (currentFrame == doc->GetMinTime().GetFrame(doc->GetFps()))
+	if (currentTime.GetFrame(fps) == doc->GetMinTime().GetFrame(doc->GetFps()))
 		_osc.ResetFilter();
 
 	// Sample waveform
