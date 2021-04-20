@@ -1,6 +1,13 @@
 #ifndef FUNCTIONS_H__
 #define FUNCTIONS_H__
 
+#include "lib_description.h"
+#include "c4d_baselist.h"
+#include "c4d_basecontainer.h"
+#include "ge_autoptr.h"
+#include "ge_prepass.h"
+
+
 ///
 /// \brief Shows or hides a description element from the node.
 ///
