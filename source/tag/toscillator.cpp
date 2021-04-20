@@ -119,10 +119,10 @@ Bool OscillatorTag::Message(GeListNode* node, Int32 type, void* data)
 			Oscillator::WaveformParameters parameters(valueRange, invert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, customFuncCurve);
 
 			DescriptionGetBitmap* dgb = (DescriptionGetBitmap*)data;
-			dgb->_width = 400;
+			dgb->_width = g_previewAreaWidth;
 			dgb->_bmpflags = ICONDATAFLAGS::NONE;
 
-			BaseBitmap* _previewBitmap = _osc.RenderToBitmap(400, 100, oscType, parameters);
+			BaseBitmap* _previewBitmap = _osc.RenderToBitmap(g_previewAreaWidth, g_previewAreaHeight, oscType, parameters, g_previewAreaOversample);
 
 			dgb->_bmp = _previewBitmap;
 
