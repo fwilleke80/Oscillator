@@ -32,4 +32,6 @@ STRINGTABLE toscillator
 	OSCTAG_OUTPUT_SCALE        "Strength";
 	OSCTAG_OUTPUT_ROT_ENABLE   "Rotation";
 	OSCTAG_OUTPUT_ROT          "Strength";
+	FILTER_SLEW_UP         "Slew-Filter up";
+	FILTER_SLEW_DOWN       "Slew-Filter down";
 }

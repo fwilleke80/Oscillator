@@ -25,6 +25,8 @@ STRINGTABLE toscillator
 	OSC_HARMONICS          "Obert\u00f6ne";
 	OSC_HARMONICS_INTERVAL "Obertonintervall";
 	OSC_HARMONICS_OFFSET   "Obertonversatz";
+	FILTER_SLEW_UP         "Slew-Filter hoch";
+	FILTER_SLEW_DOWN       "Slew-Filter runter";
 
 	OSCTAG_OUTPUT_POS_ENABLE   "Position";
 	OSCTAG_OUTPUT_POS          "St\u00e4rke";

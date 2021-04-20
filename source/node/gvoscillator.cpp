@@ -33,6 +33,8 @@ static Int32 g_input_ids[] = {
 	OSC_HARMONICS,
 	OSC_HARMONICS_INTERVAL,
 	OSC_HARMONICS_OFFSET,
+	FILTER_SLEW_UP,
+	FILTER_SLEW_DOWN,
 	0
 };
 
@@ -92,6 +94,8 @@ Bool OscillatorNode::iCreateOperator(GvNode* bn)
 	dataPtr->SetUInt32(OSC_HARMONICS, 4);
 	dataPtr->SetFloat(OSC_HARMONICS_INTERVAL, 1.0);
 	dataPtr->SetFloat(OSC_HARMONICS_OFFSET, 1.0);
+	dataPtr->SetFloat(FILTER_SLEW_UP, 0.0);
+	dataPtr->SetFloat(FILTER_SLEW_DOWN, 0.0);
 
 	// Set default spline
 	GeData gdCurve(CUSTOMDATATYPE_SPLINE, DEFAULTVALUE);
@@ -129,12 +133,14 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 			const UInt harmonics = dataPtr->GetUInt32(OSC_HARMONICS);
 			const Float harmonicInterval = Max(dataPtr->GetFloat(OSC_HARMONICS_INTERVAL), 0.1);
 			const Float harmonicIntervalOffset = dataPtr->GetFloat(OSC_HARMONICS_OFFSET);
+			const Float slewUp = dataPtr->GetFloat(FILTER_SLEW_UP);
+			const Float slewDown = dataPtr->GetFloat(FILTER_SLEW_DOWN);
 
 			SplineData* customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 			if (!customFuncCurve)
 				iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
-			Oscillator::WaveformParameters parameters(valueRange, invert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, customFuncCurve);
+			Oscillator::WaveformParameters parameters(valueRange, invert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, slewUp, slewDown, customFuncCurve);
 
 			DescriptionGetBitmap* dgb = (DescriptionGetBitmap*)data;
 			dgb->_width = g_previewAreaWidth;
@@ -323,16 +329,32 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 				return false;
 		}
 
+		GvPort* const portSlewUp = _ports.in_values[6]->GetPort();
+		Float slewUp = 0.0;
+		if (portSlewUp)
+		{
+			if (!portSlewUp->GetFloat(&slewUp, run))
+				return false;
+		}
+
+		GvPort* const portSlewDown = _ports.in_values[7]->GetPort();
+		Float slewDown = 0.0;
+		if (portSlewDown)
+		{
+			if (!portSlewDown->GetFloat(&slewDown, run))
+				return false;
+		}
+
 		SplineData* customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 		if (!customFuncCurve)
 			iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
 		// Osillator input data
-		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicsInterval, harmonicsOffset, customFuncCurve);
+		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicsInterval, harmonicsOffset, slewUp, slewDown, customFuncCurve);
 		const Oscillator::WAVEFORMTYPE waveformType = (Oscillator::WAVEFORMTYPE)dataPtr->GetInt32(OSC_FUNCTION);
 
 		// Sample waveform
-		Float waveformValue = _osc.SampleWaveform(inputValue * frequency, waveformType, waveformParameters);
+		Float waveformValue = _osc.GetFiltered(_osc.SampleWaveform(inputValue * frequency, waveformType, waveformParameters), waveformParameters);
 
 		// Set waveform value to output port
 		port->SetFloat(waveformValue, run);

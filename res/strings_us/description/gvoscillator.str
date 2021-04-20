@@ -27,4 +27,6 @@ STRINGTABLE gvOscillator
 	OSC_HARMONICS          "Harmonics";
 	OSC_HARMONICS_INTERVAL "Harmonics Interval";
 	OSC_HARMONICS_OFFSET   "Harmonics Offset";
+	FILTER_SLEW_UP         "Slew-Filter up";
+	FILTER_SLEW_DOWN       "Slew-Filter down";
 }

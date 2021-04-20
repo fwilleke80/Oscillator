@@ -68,6 +68,9 @@ Bool OscillatorTag::Init(GeListNode* node)
 	dataRef.SetFloat(OSC_HARMONICS_INTERVAL, 1.0);
 	dataRef.SetFloat(OSC_HARMONICS_OFFSET, 1.0);
 
+	dataRef.SetFloat(FILTER_SLEW_UP, 0.0);
+	dataRef.SetFloat(FILTER_SLEW_DOWN, 0.0);
+
 	dataRef.SetBool(OSCTAG_OUTPUT_POS_ENABLE, true);
 	dataRef.SetVector(OSCTAG_OUTPUT_POS, Vector(0.0, 100.0, 0.0));
 	dataRef.SetBool(OSCTAG_OUTPUT_SCALE_ENABLE, true);
@@ -111,12 +114,14 @@ Bool OscillatorTag::Message(GeListNode* node, Int32 type, void* data)
 			const UInt harmonics = dataRef.GetUInt32(OSC_HARMONICS);
 			const Float harmonicInterval = Max(dataRef.GetFloat(OSC_HARMONICS_INTERVAL), 0.1);
 			const Float harmonicIntervalOffset = dataRef.GetFloat(OSC_HARMONICS_OFFSET);
+			const Float slewUp = dataRef.GetFloat(FILTER_SLEW_UP);
+			const Float slewDown = dataRef.GetFloat(FILTER_SLEW_DOWN);
 
 			SplineData* customFuncCurve = (SplineData*)(dataRef.GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 			if (!customFuncCurve)
 				iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
-			Oscillator::WaveformParameters parameters(valueRange, invert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, customFuncCurve);
+			Oscillator::WaveformParameters parameters(valueRange, invert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, slewUp, slewDown, customFuncCurve);
 
 			DescriptionGetBitmap* dgb = (DescriptionGetBitmap*)data;
 			dgb->_width = g_previewAreaWidth;
@@ -181,6 +186,8 @@ EXECUTIONRESULT OscillatorTag::Execute(BaseTag* tag, BaseDocument* doc, BaseObje
 	const Float harmonicsInterval = dataRef.GetFloat(OSC_HARMONICS_INTERVAL);
 	const Float harmonicsOffset = dataRef.GetFloat(OSC_HARMONICS_OFFSET);
 	const Float inputFrequency = dataRef.GetFloat(OSC_INPUTSCALE);
+	const Float slewUp = dataRef.GetFloat(FILTER_SLEW_UP);
+	const Float slewDown = dataRef.GetFloat(FILTER_SLEW_DOWN);
 	const Float inputTime = doc->GetTime().Get();
 
 	SplineData* customFuncCurve = (SplineData*)(dataRef.GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
@@ -191,11 +198,16 @@ EXECUTIONRESULT OscillatorTag::Execute(BaseTag* tag, BaseDocument* doc, BaseObje
 	}
 
 	// Osillator input data
-	Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicsInterval, harmonicsOffset, customFuncCurve);
+	Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicsInterval, harmonicsOffset, slewUp, slewDown, customFuncCurve);
 	const Oscillator::WAVEFORMTYPE waveformType = (Oscillator::WAVEFORMTYPE)dataRef.GetInt32(OSC_FUNCTION);
 
+	// Reset filter if necessary
+	const Int32 currentFrame = doc->GetTime().GetFrame(doc->GetFps());
+	if (currentFrame == doc->GetMinTime().GetFrame(doc->GetFps()))
+		_osc.ResetFilter();
+
 	// Sample waveform
-	Float waveformValue = _osc.SampleWaveform(inputTime * inputFrequency, waveformType, waveformParameters);
+	Float waveformValue = _osc.GetFiltered(_osc.SampleWaveform(inputTime * inputFrequency, waveformType, waveformParameters), waveformParameters);
 
 	// Apply result to object
 	const Bool enablePos = dataRef.GetBool(OSCTAG_OUTPUT_POS_ENABLE);
