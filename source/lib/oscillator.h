@@ -2,8 +2,8 @@
 #define OSCILLATOR_H__
 
 #include "customgui_splinecontrol.h"
-#include "c4d_tools.h"
 #include "c4d_basebitmap.h"
+#include "c4d_tools.h"
 #include "c4d_general.h"
 
 #include "ge_prepass.h"
@@ -18,13 +18,63 @@
  */
 
 
-static const Float TWOBYPI = 2.0 / PI;
+// Waveform preview settings
+static const Int32 g_previewAreaWidth = 400; ///< Waveform preview width
+static const Int32 g_previewAreaHeight = 100; ///< Waveform preview height
+static const Int32 g_previewAreaOversample = 2; ///< Waveform preview oversampling
+static const Float g_previewAreaScaleX = 2.0; ///< Scaling of the preview's X axis
+static const Int32 g_previewAreaVerticalGridLines = 8; ///< Vertical grid lines in preview
+static const Int32 g_previewAreaTextWidth = 8; ///< Text font Width
+static const Int32 g_previewAreaTextHeight = 12; ///< Text font Height
+static const Int32 g_previewAreaTextMarginH = 2; ///< Horizontal margin of text
+static const Int32 g_previewAreaTextMarginV = 4; ///< Vertical margin of text
+static const Int32 g_previewAreaColor_bg_r = 32; ///< Background color
+static const Int32 g_previewAreaColor_bg_g = 32; ///< Background color
+static const Int32 g_previewAreaColor_bg_b = 32; ///< Background color
+static const Int32 g_previewAreaColor_grid1_r = 8; ///< Normal grid line color
+static const Int32 g_previewAreaColor_grid1_g = 48; ///< Normal grid line color
+static const Int32 g_previewAreaColor_grid1_b = 8; ///< Normal grid line color
+static const Int32 g_previewAreaColor_grid2_r = 32; ///< Bold grid line color
+static const Int32 g_previewAreaColor_grid2_g = 128; ///< Bold grid line color
+static const Int32 g_previewAreaColor_grid2_b = 16; ///< Bold grid line color
+static const Int32 g_previewAreaColor_text_r = 32; ///< Bold grid line color
+static const Int32 g_previewAreaColor_text_g = 160; ///< Bold grid line color
+static const Int32 g_previewAreaColor_text_b = 16; ///< Bold grid line color
+static const Int32 g_previewAreaColor_wave_r = 32; ///< Waveform color
+static const Int32 g_previewAreaColor_wave_g = 255; ///< Waveform color
+static const Int32 g_previewAreaColor_wave_b = 16; ///< Waveform color
 
-MAXON_ATTRIBUTE_FORCE_INLINE Float FreqToAngularVelocity(Float h)
+static const Float TWOBYPI = 2.0 / PI; ///< We need this in some calculations
+
+///
+/// \brief Convert frequency to angular velocity (as input for Sin() and related functions)
+///
+MAXON_ATTRIBUTE_FORCE_INLINE Float FreqToAngularVelocity(Float f)
 {
-	return h * 2.0 * PI;
+	return f * PI2;
 }
 
+///
+/// \brief Draws an X into a BaseBitmap
+///
+static void DrawX(BaseBitmap* bmp, Int32 x, Int32 y, Int32 w, Int32 h)
+{
+	bmp->Line(x, y, x + w, y + h); // Top left -> bottom right
+	bmp->Line(x, y + h, x + w, y); // Bottom left -> top right
+};
+
+///
+/// \brief Draws a Y into a BaseBitmap
+///
+static void DrawY(BaseBitmap* bmp, Int32 x, Int32 y, Int32 w, Int32 h)
+{
+	bmp->Line(x, y + h, x + w, y); // Bottom left -> top right
+	bmp->Line(x, y, x + w / 2, y + h / 2); // Top left -> center
+};
+
+///
+/// \brief Returns true if two SplineDatas are equal
+///
 MAXON_ATTRIBUTE_FORCE_INLINE Bool EqualSplineDatas(SplineData* sp1, SplineData* sp2)
 {
 	if (!sp1 || !sp2)
@@ -42,7 +92,6 @@ MAXON_ATTRIBUTE_FORCE_INLINE Bool EqualSplineDatas(SplineData* sp1, SplineData* 
 		if (k1 != k2)
 			return false;
 	}
-
 
 	return true;
 }
@@ -196,7 +245,6 @@ public:
 	{
 		Float result = ASin(Sin(FreqToAngularVelocity(x))) * TWOBYPI;
 
-
 		if (parameters.valueRange == VALUERANGE::RANGE01)
 		{
 			result = result * 0.5 + 0.5;
@@ -292,10 +340,10 @@ public:
 	///
 	MAXON_ATTRIBUTE_FORCE_INLINE Float GetAnalogSaw(Float x, const WaveformParameters& parameters) const
 	{
-		Float result = 0.0;
 		const Float fHarmonics = (Float)(parameters.harmonics + 1);
 		const Float xValue = FreqToAngularVelocity(x);
 
+		Float result = 0.0;
 		for (Float n = 1.0; n < fHarmonics; n = ++n)
 		{
 			result += Sin(n * xValue) / n;
@@ -324,10 +372,10 @@ public:
 	///
 	MAXON_ATTRIBUTE_FORCE_INLINE Float GetAnalogSharktooth(Float x, const WaveformParameters& parameters) const
 	{
-		Float result = 0.0;
 		const Float fHarmonics = (Float)(parameters.harmonics + 1);
 		const Float xValue = FreqToAngularVelocity(x);
 
+		Float result = 0.0;
 		for (Float n = 1.0; n < fHarmonics; ++n)
 		{
 			if (FMod(n, 2.0) == 0.0)
@@ -359,10 +407,10 @@ public:
 	///
 	MAXON_ATTRIBUTE_FORCE_INLINE Float GetAnalogSquare(Float x, const WaveformParameters& parameters) const
 	{
-		Float result = 0.0;
 		const Float fHarmonics = (Float)(parameters.harmonics + 1);
 		const Float xValue = FreqToAngularVelocity(x);
 
+		Float result = 0.0;
 		for (Float n = 1.0; n < fHarmonics; n += 2.0)
 		{
 			result += Sin(n * xValue) / n;
@@ -379,14 +427,22 @@ public:
 		return result;
 	}
 
+	///
+	/// \brief Samples a waveform by overlaying a sine and its harmonics. Depending on parameters, many interesting waveforms are possible.
+	///
+	/// \note This waveform is significantly slower to calculate than the non-analogue ones.
+	///
+	/// \param[in] x The sample position (aka. time)
+	/// \param[in] parameters The waveform parameters
+	///
+	/// \return The waveform value as position x
+	///
 	MAXON_ATTRIBUTE_FORCE_INLINE Float GetAnalog(Float x, const WaveformParameters& parameters) const
 	{
 		const Float fHarmonics = (Float)(parameters.harmonics);
 		const Float xValue = FreqToAngularVelocity(x);
 
 		Float result = 0.0;
-//		Float result = Sin(xValue); // Fundamental
-
 		for (Float n = parameters.harmonicIntervalOffset; n < fHarmonics * parameters.harmonicInterval; n += parameters.harmonicInterval)
 		{
 			result += Sin(n * xValue) / n;
@@ -457,70 +513,158 @@ public:
 	///
 	/// \brief Renders the waveform to a BaseBitmap. Caller owns the pointed object.
 	///
-	BaseBitmap* RenderToBitmap(Int32 w, Int32 h, Oscillator::WAVEFORMTYPE oscType, const WaveformParameters& parameters)
+	/// \param[in] w Width of the rendered bitmap
+	/// \param[in] h Height of the rendered bitmap
+	/// \param[in] oscType Type of oscillator / waveform
+	/// \param[in] parameters Waveform generation parameters
+	/// \param[in] oversample Oversampling values. Must be >= 1, should be a power of 2 (1, 2, 4, 8, 16, 32, ...). A value of 1 will not apply any oversampling.
+	///
+	/// \return The rendered bitmap, or nullptr if anything went wrong.
+	///
+	BaseBitmap* RenderToBitmap(Int32 w, Int32 h, Oscillator::WAVEFORMTYPE oscType, const WaveformParameters& parameters, UInt32 oversample = 1)
 	{
-		BaseBitmap* bmp = BaseBitmap::Alloc();
+
+		const Int32 wActual = w * oversample;
+		const Int32 hActual = h * oversample;
+		AutoAlloc<BaseBitmap> bmp;
 		if (!bmp)
 			return nullptr;
 
-		if (bmp->Init(w, h) != IMAGERESULT::OK)
-		{
-			BaseBitmap::Free(bmp);
+		if (bmp->Init(wActual, hActual) != IMAGERESULT::OK)
 			return nullptr;
-		}
 
-		// Background
-		bmp->Clear(32, 32, 32);
+		// Some precalculated values
+		const Int32 wActual1 = wActual - 1;
+		const Int32 hActual1 = hActual - 1;
+		const Int32 hby2 = hActual / 2;
+		const Float iw1 = Inverse((Float)(wActual1));
 
-		// Grid
-		bmp->SetPen(8, 48, 8);
-		static const Int32 verticalGridLines = 4;
+		// Draw background
+		// ---------------
+		bmp->Clear(g_previewAreaColor_bg_r, g_previewAreaColor_bg_g, g_previewAreaColor_bg_b);
+
+		// Draw grid
+		// ---------
+		// Vertical lines
+		bmp->SetPen(g_previewAreaColor_grid1_r, g_previewAreaColor_grid1_g, g_previewAreaColor_grid1_b);
+		for (Int32 x = 0; x < wActual1; x = x + wActual1 / g_previewAreaVerticalGridLines)
+			bmp->Line(x, 0, x, hActual1);
+
+		// X axis
+		bmp->SetPen(g_previewAreaColor_grid2_r, g_previewAreaColor_grid2_g, g_previewAreaColor_grid2_b);
 		if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
-			bmp->Line(0, h / 2, w - 1, h / 2);
-		else
-			bmp->Line(0, h - 1, w - 1, h - 1);
-		for (Int32 x = 0; x < w - 1; x = x + w / verticalGridLines)
 		{
-			bmp->Line(x, 0, x, h - 1);
+			bmp->Line(0, hby2, wActual1, hby2);
 		}
-
-		// Waveform
-		bmp->SetPen(32, 255, 16);
-		static const Float previewScaleX = 2.0;
-		const Float iw1 = Inverse((Float)(w - 1));
-		const Int32 h1 = h - 1;
-		Int32 yPrevious = NOTOK;
-		for (Int32 x = 0; x < w; ++x)
+		else
 		{
-			const Float xSample = (Float)x * iw1 * previewScaleX;
-			Float y = (Int32)(SampleWaveform(xSample, oscType, parameters) * (Float)(h1));
-			if (oscType == Oscillator::WAVEFORMTYPE::SAW_ANALOG || oscType == Oscillator::WAVEFORMTYPE::SHARKTOOTH_ANALOG)
+			bmp->Line(0, hActual1, wActual1, hActual1);
+		}
+		// Y axis
+		bmp->Line(0, 0, 0, hActual1);
+
+		// Axis labels
+		bmp->SetPen(g_previewAreaColor_text_r, g_previewAreaColor_text_g, g_previewAreaColor_text_b);
+		if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+		{
+			DrawX(bmp, wActual1 - g_previewAreaTextWidth - g_previewAreaTextMarginH, hby2 + g_previewAreaTextMarginV, g_previewAreaTextWidth, g_previewAreaTextHeight);
+		}
+		else
+		{
+			DrawX(bmp, wActual1 - g_previewAreaTextWidth - g_previewAreaTextMarginH, hActual1 - g_previewAreaTextHeight - g_previewAreaTextMarginV, g_previewAreaTextWidth, g_previewAreaTextHeight);
+		}
+		DrawY(bmp, 5, 5, g_previewAreaTextWidth, g_previewAreaTextHeight);
+
+		// Draw waveform
+		// -------------
+		bmp->SetPen(g_previewAreaColor_wave_r, g_previewAreaColor_wave_g, g_previewAreaColor_wave_b);
+		Int32 yPrevious = NOTOK;
+		for (Int32 x = 0; x < wActual; ++x)
+		{
+			// Sample waveform
+			const Float xSample = (Float)x * iw1 * g_previewAreaScaleX;
+			Float y = (Int32)(SampleWaveform(xSample, oscType, parameters) * (Float)(hActual1));
+
+			// Scale Y depending on waveform and value range.
+			// The "analog" waveforms cause a bit of work here, as they
+			// are inherently refusing to fit into a strict value range.
+			// Because of that, we have to do some scaling and offsetting
+			// for each type of "analog" waveform.
+			switch (oscType)
 			{
-				y *= 0.8; // Scale down, so we don't draw outside of area
-				if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
-					y = y * 0.4 + h * 0.5; // Vertically center
-			}
-			else if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
-			{
-				y *= 0.9; // Scale down a little, so we don't draw outside of area
-				y = y * 0.45 + h * 0.5;  // Vertically center
+				case Oscillator::WAVEFORMTYPE::SAW_ANALOG:
+				{
+					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+						y = y * 0.4 + hActual * 0.5; // Vertically center
+					else
+						y = y * 0.8 + hActual * 0.1;
+
+					break;
+				}
+
+				case Oscillator::WAVEFORMTYPE::SQUARE_ANALOG:
+				{
+					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+						y = y * 0.75 + hActual * 0.5; // Vertically center
+					else
+						y = y * 1.5 - hActual * 0.25;
+
+					break;
+				}
+
+				case Oscillator::WAVEFORMTYPE::SHARKTOOTH_ANALOG:
+				{
+					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+						y = y * 0.25 + hActual * 0.5; // Vertically center
+					else
+						y = y * 0.5 + hActual * 0.25;
+					break;
+				}
+
+				case Oscillator::WAVEFORMTYPE::ANALOG:
+				{
+					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+						y = y * 0.5 + hActual * 0.5;  // Vertically center
+					break;
+				}
 			}
 
-			const Int32 yDraw = ClampValue(h1 - (Int32)y, 0, h1);
+			// Avoid drawing outside bitmap bounds
+			const Int32 yDraw = ClampValue(hActual1 - (Int32)y, 0, hActual1);
 
+			// Optimization
 			if (Abs(yDraw - yPrevious) > 1 && x > 0)
+				// If this point is 2 or more pixels away from the previous one, draw a line
 				bmp->Line(x - 1, yPrevious, x, yDraw);
 			else
-				bmp->SetPixel(x, yDraw, 0, 255, 0);
+				// If this point lies directly beneath the previous one, just draw a pixel
+				bmp->SetPixel(x, yDraw, g_previewAreaColor_wave_r, g_previewAreaColor_wave_g, g_previewAreaColor_wave_b);
 
+			// Memorize previous point
 			yPrevious = yDraw;
 		}
 
-		return bmp;
+		// Scale down the oversampled bitmap
+		if (oversample > 1)
+		{
+			// Alloc and initialize temporary bitmap
+			AutoAlloc<BaseBitmap> tmpBmp;
+			if (!tmpBmp)
+				return nullptr;
+			if (tmpBmp->Init(w, h) != IMAGERESULT::OK)
+				return nullptr;
+
+			// Scale down bmp into temporary
+			bmp->ScaleBicubic(tmpBmp, 0, 0, wActual1, hActual1, 0, 0, w - 1, h - 1);
+
+			// Free original bitmap, replace with scaled tmpBmp
+			bmp.Free();
+			bmp.Assign(tmpBmp.Release());
+		}
+
+		return bmp.Release();
 	}
 
 };
 
 #endif // OSCILLATOR_H__
-
-
