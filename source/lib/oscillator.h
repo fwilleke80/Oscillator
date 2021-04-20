@@ -592,6 +592,7 @@ public:
 			// for each type of "analog" waveform.
 			switch (oscType)
 			{
+				// Analog Sawtooth
 				case Oscillator::WAVEFORMTYPE::SAW_ANALOG:
 				{
 					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
@@ -602,6 +603,7 @@ public:
 					break;
 				}
 
+				// Analog Square
 				case Oscillator::WAVEFORMTYPE::SQUARE_ANALOG:
 				{
 					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
@@ -612,6 +614,7 @@ public:
 					break;
 				}
 
+				// Analog Sharktooth
 				case Oscillator::WAVEFORMTYPE::SHARKTOOTH_ANALOG:
 				{
 					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
@@ -621,7 +624,16 @@ public:
 					break;
 				}
 
+				// Analog
 				case Oscillator::WAVEFORMTYPE::ANALOG:
+				{
+					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
+						y = y * 0.5 + hActual * 0.5;  // Vertically center
+					break;
+				}
+
+				// All other waveforms (including the "non-analog" ones
+				default:
 				{
 					if (parameters.valueRange == Oscillator::VALUERANGE::RANGE11)
 						y = y * 0.5 + hActual * 0.5;  // Vertically center
