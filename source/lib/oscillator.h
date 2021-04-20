@@ -57,7 +57,7 @@ MAXON_ATTRIBUTE_FORCE_INLINE Float FreqToAngularVelocity(Float f)
 ///
 /// \brief Draws an X into a BaseBitmap
 ///
-static void DrawX(BaseBitmap* bmp, Int32 x, Int32 y, Int32 w, Int32 h)
+MAXON_ATTRIBUTE_FORCE_INLINE void DrawX(BaseBitmap* bmp, Int32 x, Int32 y, Int32 w, Int32 h)
 {
 	bmp->Line(x, y, x + w, y + h); // Top left -> bottom right
 	bmp->Line(x, y + h, x + w, y); // Bottom left -> top right
@@ -66,7 +66,7 @@ static void DrawX(BaseBitmap* bmp, Int32 x, Int32 y, Int32 w, Int32 h)
 ///
 /// \brief Draws a Y into a BaseBitmap
 ///
-static void DrawY(BaseBitmap* bmp, Int32 x, Int32 y, Int32 w, Int32 h)
+MAXON_ATTRIBUTE_FORCE_INLINE void DrawY(BaseBitmap* bmp, Int32 x, Int32 y, Int32 w, Int32 h)
 {
 	bmp->Line(x, y + h, x + w, y); // Bottom left -> top right
 	bmp->Line(x, y, x + w / 2, y + h / 2); // Top left -> center
