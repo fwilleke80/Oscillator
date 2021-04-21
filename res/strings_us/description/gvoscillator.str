@@ -27,4 +27,13 @@ STRINGTABLE gvOscillator
 	OSC_HARMONICS          "Harmonics";
 	OSC_HARMONICS_INTERVAL "Harmonics Interval";
 	OSC_HARMONICS_OFFSET   "Harmonics Offset";
+
+	FILTER_MODE            "Filter";
+		FILTER_MODE_NONE     "None";
+		FILTER_MODE_SLEW     "Slew";
+		FILTER_MODE_INERTIA  "Inertia";
+	FILTER_SLEW_RATE_UP    "Slew Rate Up";
+	FILTER_SLEW_RATE_DOWN  "Slew Rate Down";
+	FILTER_INERTIA_INERTIA "Inertia";
+	FILTER_INERTIA_DAMPEN  "Dampening";
 }

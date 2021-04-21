@@ -33,6 +33,10 @@ static Int32 g_input_ids[] = {
 	OSC_HARMONICS,
 	OSC_HARMONICS_INTERVAL,
 	OSC_HARMONICS_OFFSET,
+	FILTER_SLEW_RATE_UP,
+	FILTER_SLEW_RATE_DOWN,
+	FILTER_INERTIA_DAMPEN,
+	FILTER_INERTIA_INERTIA,
 	0
 };
 
@@ -93,6 +97,12 @@ Bool OscillatorNode::iCreateOperator(GvNode* bn)
 	dataPtr->SetFloat(OSC_HARMONICS_INTERVAL, 1.0);
 	dataPtr->SetFloat(OSC_HARMONICS_OFFSET, 1.0);
 
+	dataPtr->SetInt32(FILTER_MODE, FILTER_MODE_NONE);
+	dataPtr->SetFloat(FILTER_SLEW_RATE_UP, 0.0);
+	dataPtr->SetFloat(FILTER_SLEW_RATE_DOWN, 0.0);
+	dataPtr->SetFloat(FILTER_INERTIA_INERTIA, 0.5);
+	dataPtr->SetFloat(FILTER_INERTIA_DAMPEN, 0.5);
+
 	// Set default spline
 	GeData gdCurve(CUSTOMDATATYPE_SPLINE, DEFAULTVALUE);
 	SplineData* splineCurve = static_cast<SplineData*>(gdCurve.GetCustomDataType(CUSTOMDATATYPE_SPLINE));
@@ -129,12 +139,17 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 			const UInt harmonics = dataPtr->GetUInt32(OSC_HARMONICS);
 			const Float harmonicInterval = Max(dataPtr->GetFloat(OSC_HARMONICS_INTERVAL), 0.1);
 			const Float harmonicIntervalOffset = dataPtr->GetFloat(OSC_HARMONICS_OFFSET);
+			const Oscillator::FILTERTYPE filterType = (Oscillator::FILTERTYPE)dataPtr->GetInt32(FILTER_MODE);
+			const Float slewUp = dataPtr->GetFloat(FILTER_SLEW_RATE_UP);
+			const Float slewDown = dataPtr->GetFloat(FILTER_SLEW_RATE_DOWN);
+			const Float inertiaInertia = dataPtr->GetFloat(FILTER_INERTIA_INERTIA);
+			const Float inertiaDampen = dataPtr->GetFloat(FILTER_INERTIA_DAMPEN);
 
 			SplineData* customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 			if (!customFuncCurve)
 				iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
-			Oscillator::WaveformParameters parameters(valueRange, invert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, customFuncCurve);
+			Oscillator::WaveformParameters parameters(valueRange, invert, pulseWidth, harmonics, harmonicInterval, harmonicIntervalOffset, filterType, slewUp, slewDown, inertiaDampen, inertiaInertia, customFuncCurve);
 
 			DescriptionGetBitmap* dgb = (DescriptionGetBitmap*)data;
 			dgb->_width = g_previewAreaWidth;
@@ -162,6 +177,7 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 	BaseContainer *dataPtr = nodePtr->GetOpContainerInstance();
 
 	const Int32 func = dataPtr->GetInt32(OSC_FUNCTION);
+	const Oscillator::FILTERTYPE filterType = (Oscillator::FILTERTYPE)dataPtr->GetInt32(FILTER_MODE);
 
 	HideDescriptionElement(node, description, OSC_CUSTOMFUNC, func != FUNC_CUSTOM);
 	HideDescriptionElement(node, description, OSC_PULSEWIDTH, func != FUNC_PULSE && func != FUNC_PULSERND);
@@ -170,6 +186,10 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 	HideDescriptionElement(node, description, OSC_HARMONICS_OFFSET, func != FUNC_ANALOG);
 	HideDescriptionElement(node, description, OUTPORT_VALUE, true);
 	HideDescriptionElement(node, description, INPORT_X, true);
+	HideDescriptionElement(node, description, FILTER_SLEW_RATE_UP, filterType != Oscillator::FILTERTYPE::SLEW);
+	HideDescriptionElement(node, description, FILTER_SLEW_RATE_DOWN, filterType != Oscillator::FILTERTYPE::SLEW);
+	HideDescriptionElement(node, description, FILTER_INERTIA_DAMPEN, filterType != Oscillator::FILTERTYPE::INERTIA);
+	HideDescriptionElement(node, description, FILTER_INERTIA_INERTIA, filterType != Oscillator::FILTERTYPE::INERTIA);
 
 	return SUPER::GetDDescription(node, description, flags);
 }
@@ -265,6 +285,7 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 		iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "GetOpContainerInstance() returned nullptr!"_s));
 
 	const Oscillator::VALUERANGE outputRange = (Oscillator::VALUERANGE)dataPtr->GetInt32(OSC_RANGE);
+	const Oscillator::FILTERTYPE filterType = (Oscillator::FILTERTYPE)dataPtr->GetInt32(FILTER_MODE);
 	const Bool outputInvert = dataPtr->GetBool(OSC_INVERT);
 
 	// With multiple output ports, Calculate() may be called multiple times per calculation
@@ -323,16 +344,48 @@ Bool OscillatorNode::Calculate(GvNode *bn, GvPort *port, GvRun *run, GvCalc *cal
 				return false;
 		}
 
+		GvPort* const portSlewUp = _ports.in_values[6]->GetPort();
+		Float slewUp = 0.0;
+		if (portSlewUp)
+		{
+			if (!portSlewUp->GetFloat(&slewUp, run))
+				return false;
+		}
+
+		GvPort* const portSlewDown = _ports.in_values[7]->GetPort();
+		Float slewDown = 0.0;
+		if (portSlewDown)
+		{
+			if (!portSlewDown->GetFloat(&slewDown, run))
+				return false;
+		}
+
+		GvPort* const portDampen = _ports.in_values[8]->GetPort();
+		Float inertiaDampen = 0.0;
+		if (portDampen)
+		{
+			if (!portDampen->GetFloat(&inertiaDampen, run))
+				return false;
+		}
+
+		GvPort* const portInertia = _ports.in_values[9]->GetPort();
+		Float inertiaInertia = 0.0;
+		if (portInertia)
+		{
+			if (!portInertia->GetFloat(&inertiaInertia, run))
+				return false;
+		}
+
 		SplineData* customFuncCurve = (SplineData*)(dataPtr->GetCustomDataType(OSC_CUSTOMFUNC, CUSTOMDATATYPE_SPLINE));
 		if (!customFuncCurve)
 			iferr_throw(maxon::NullptrError(MAXON_SOURCE_LOCATION, "customFuncCurve is nullptr!"_s));
 
 		// Osillator input data
-		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicsInterval, harmonicsOffset, customFuncCurve);
+		Oscillator::WaveformParameters waveformParameters(outputRange, outputInvert, pulseWidth, harmonics, harmonicsInterval, harmonicsOffset, filterType, slewUp, slewDown, inertiaDampen, inertiaInertia, customFuncCurve);
 		const Oscillator::WAVEFORMTYPE waveformType = (Oscillator::WAVEFORMTYPE)dataPtr->GetInt32(OSC_FUNCTION);
 
 		// Sample waveform
-		Float waveformValue = _osc.SampleWaveform(inputValue * frequency, waveformType, waveformParameters);
+		Float waveformValue = _osc.GetFiltered(_osc.SampleWaveform(inputValue * frequency, waveformType, waveformParameters), waveformParameters, filterType);
 
 		// Set waveform value to output port
 		port->SetFloat(waveformValue, run);

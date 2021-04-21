@@ -5,8 +5,9 @@
 #include "c4d_basebitmap.h"
 #include "c4d_tools.h"
 #include "c4d_general.h"
-
 #include "ge_prepass.h"
+
+#include "filter.h"
 
 /*
  Information:
@@ -131,6 +132,16 @@ public:
 	} MAXON_ENUM_LIST_CLASS(VALUERANGE);
 
 	///
+	/// \brief Filter type
+	///
+	enum class FILTERTYPE
+	{
+		NONE = 0,
+		SLEW = 1,
+		INERTIA = 2
+	} MAXON_ENUM_LIST_CLASS(FILTERTYPE);
+
+	///
 	/// \brief Parameters for waveform generation
 	///
 	struct WaveformParameters
@@ -141,32 +152,41 @@ public:
 		UInt harmonics; ///< Defines the nmber of harmonics in GetAnalogX(). [1 .. infinite]
 		Float harmonicInterval; ///< Harmonic multiplication will be increased by this value for each harmonic
 		Float harmonicIntervalOffset; ///< Harmonic multiplication will start with this value before it is increased
+		FILTERTYPE filterType; ///< The type of filter used
+		Float filterSlewUp; ///< Slew filter up rate
+		Float filterSlewDown; ///< Slew filter down rate
+		Float filterSlew; ///< Inertia filter slew
+		Float filterInertia; ///< Inertia filter inertia
 		SplineData* customCurve; ///< Pointer to a spline for the custom waveform
 
 		/// \brief Default vonstructor
-		WaveformParameters() : valueRange(VALUERANGE::RANGE01), invert(false), pulseWidth(0.0), harmonics(0), harmonicInterval(0.0), harmonicIntervalOffset(0.0), customCurve(nullptr)
+		WaveformParameters() : valueRange(VALUERANGE::RANGE01), invert(false), pulseWidth(0.0), harmonics(0), harmonicInterval(0.0), harmonicIntervalOffset(0.0), filterType(FILTERTYPE::SLEW), filterSlewUp(0.0), filterSlewDown(0.0), filterSlew(0.0), filterInertia(0.0), customCurve(nullptr)
 		{ }
 
 		/// \brief Copy constructor
-		WaveformParameters(const WaveformParameters& src) : valueRange(src.valueRange), invert(src.invert), pulseWidth(src.pulseWidth), harmonics(src.harmonics), harmonicInterval(src.harmonicInterval), harmonicIntervalOffset(src.harmonicIntervalOffset), customCurve(src.customCurve)
+		WaveformParameters(const WaveformParameters& src) : valueRange(src.valueRange), invert(src.invert), pulseWidth(src.pulseWidth), harmonics(src.harmonics), harmonicInterval(src.harmonicInterval), harmonicIntervalOffset(src.harmonicIntervalOffset), filterType(src.filterType), filterSlewUp(src.filterSlewUp), filterSlewDown(src.filterSlewDown), filterSlew(src.filterSlew), filterInertia(src.filterInertia), customCurve(src.customCurve)
 		{ }
 
 		/// \brief Construct from values
-		WaveformParameters(VALUERANGE t_valueRange, Bool t_invert, Float t_pulseWidth, UInt t_harmonics, Float t_harmonicInterval, Float t_harmonicIntervalOffset, SplineData* t_customCurve) : valueRange(t_valueRange), invert(t_invert), pulseWidth(t_pulseWidth), harmonics(t_harmonics), harmonicInterval(t_harmonicInterval), harmonicIntervalOffset(t_harmonicIntervalOffset), customCurve(t_customCurve)
+		WaveformParameters(VALUERANGE t_valueRange, Bool t_invert, Float t_pulseWidth, UInt t_harmonics, Float t_harmonicInterval, Float t_harmonicIntervalOffset, FILTERTYPE t_filterType, Float t_filterSlewUp, Float t_filterSlewDown, Float t_filterSlew, Float t_filterInertia, SplineData* t_customCurve) : valueRange(t_valueRange), invert(t_invert), pulseWidth(t_pulseWidth), harmonics(t_harmonics), harmonicInterval(t_harmonicInterval), harmonicIntervalOffset(t_harmonicIntervalOffset), filterType(t_filterType), filterSlewUp(t_filterSlewUp), filterSlewDown(t_filterSlewDown), filterSlew(t_filterSlew), filterInertia(t_filterInertia), customCurve(t_customCurve)
 		{ }
 
 		/// \brief Equals operator
 		Bool operator ==(const WaveformParameters& c) const
 		{
-			return valueRange == c.valueRange && invert == c.invert && pulseWidth == c.pulseWidth && harmonics == c.harmonics && harmonicInterval == c.harmonicInterval && harmonicIntervalOffset == c.harmonicIntervalOffset && (customCurve != nullptr && c.customCurve != nullptr) && (EqualSplineDatas(customCurve, c.customCurve));
+			return valueRange == c.valueRange && invert == c.invert && pulseWidth == c.pulseWidth && harmonics == c.harmonics && harmonicInterval == c.harmonicInterval && harmonicIntervalOffset == c.harmonicIntervalOffset && filterType == c.filterType && filterSlewUp == c.filterSlewUp && filterSlewDown == c.filterSlewDown && filterSlew == c.filterSlew && filterInertia == c.filterInertia && (customCurve != nullptr && c.customCurve != nullptr) && (EqualSplineDatas(customCurve, c.customCurve));
 		}
 
 		/// \brief Not-equals operator
 		Bool operator !=(const WaveformParameters& c) const
 		{
-			return valueRange != c.valueRange || invert != c.invert || pulseWidth != c.pulseWidth || harmonics != c.harmonics || harmonicInterval != c.harmonicInterval || harmonicIntervalOffset != c.harmonicIntervalOffset || (customCurve != c.customCurve) || (!EqualSplineDatas(customCurve, c.customCurve));
+			return valueRange != c.valueRange || invert != c.invert || pulseWidth != c.pulseWidth || harmonics != c.harmonics || harmonicInterval != c.harmonicInterval || harmonicIntervalOffset != c.harmonicIntervalOffset || filterType != c.filterType || filterSlewUp != c.filterSlewUp || filterSlewDown != c.filterSlewDown || filterSlew != c.filterSlew || filterInertia != c.filterInertia || (customCurve != c.customCurve) || (!EqualSplineDatas(customCurve, c.customCurve));
 		}
 	};
+
+private:
+	Filter::Slew _slewFilter;
+	Filter::Inertia _inertiaFilter;
 
 public:
 	///
@@ -577,13 +597,14 @@ public:
 
 		// Draw waveform
 		// -------------
+		Oscillator renderOsc; // Extra oscillator for rendering, otherwise the slew filter would interfere
 		bmp->SetPen(g_previewAreaColor_wave_r, g_previewAreaColor_wave_g, g_previewAreaColor_wave_b);
 		Int32 yPrevious = NOTOK;
 		for (Int32 x = 0; x < wActual; ++x)
 		{
 			// Sample waveform
 			const Float xSample = (Float)x * iw1 * g_previewAreaScaleX;
-			Float y = (Int32)(SampleWaveform(xSample, oscType, parameters) * (Float)(hActual1));
+			Float y = (Int32)(renderOsc.GetFiltered(renderOsc.SampleWaveform(xSample, oscType, parameters), parameters, parameters.filterType) * (Float)(hActual1));
 
 			// Scale Y depending on waveform and value range.
 			// The "analog" waveforms cause a bit of work here, as they
@@ -675,6 +696,25 @@ public:
 		}
 
 		return bmp.Release();
+	}
+
+	void SetFilter(Float value)
+	{
+		_slewFilter.Set(value);
+		_inertiaFilter.Set(value);
+	}
+
+	MAXON_ATTRIBUTE_FORCE_INLINE Float GetFiltered(Float value, const WaveformParameters& parameters, FILTERTYPE filterType)
+	{
+		switch (filterType)
+		{
+			case FILTERTYPE::SLEW:
+				return _slewFilter.Filter(value, parameters.filterSlewUp, parameters.filterSlewDown);
+
+			case FILTERTYPE::INERTIA:
+				return _inertiaFilter.Filter(value, parameters.filterSlew, parameters.filterInertia);
+		}
+		return value;
 	}
 
 };
