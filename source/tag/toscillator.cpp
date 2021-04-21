@@ -154,12 +154,17 @@ Bool OscillatorTag::GetDDescription(GeListNode* node, Description* description, 
 	const BaseContainer& dataRef = tagPtr->GetDataInstanceRef();
 
 	const Int32 func = dataRef.GetInt32(OSC_FUNCTION);
+	const Oscillator::FILTERTYPE filterType = (Oscillator::FILTERTYPE)dataRef.GetInt32(FILTER_MODE);
 
 	HideDescriptionElement(node, description, OSC_CUSTOMFUNC, func != FUNC_CUSTOM);
 	HideDescriptionElement(node, description, OSC_PULSEWIDTH, func != FUNC_PULSE && func != FUNC_PULSERND);
 	HideDescriptionElement(node, description, OSC_HARMONICS, func != FUNC_SAW_ANALOG && func != FUNC_SHARKTOOTH_ANALOG && func != FUNC_SQUARE_ANALOG && func != FUNC_ANALOG);
 	HideDescriptionElement(node, description, OSC_HARMONICS_INTERVAL, func != FUNC_ANALOG);
 	HideDescriptionElement(node, description, OSC_HARMONICS_OFFSET, func != FUNC_ANALOG);
+	HideDescriptionElement(node, description, FILTER_SLEW_RATE_UP, filterType != Oscillator::FILTERTYPE::SLEW);
+	HideDescriptionElement(node, description, FILTER_SLEW_RATE_DOWN, filterType != Oscillator::FILTERTYPE::SLEW);
+	HideDescriptionElement(node, description, FILTER_INERTIA_DAMPEN, filterType != Oscillator::FILTERTYPE::INERTIA);
+	HideDescriptionElement(node, description, FILTER_INERTIA_INERTIA, filterType != Oscillator::FILTERTYPE::INERTIA);
 
 	return SUPER::GetDDescription(node, description, flags);
 }

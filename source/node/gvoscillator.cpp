@@ -177,6 +177,7 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 	BaseContainer *dataPtr = nodePtr->GetOpContainerInstance();
 
 	const Int32 func = dataPtr->GetInt32(OSC_FUNCTION);
+	const Oscillator::FILTERTYPE filterType = (Oscillator::FILTERTYPE)dataPtr->GetInt32(FILTER_MODE);
 
 	HideDescriptionElement(node, description, OSC_CUSTOMFUNC, func != FUNC_CUSTOM);
 	HideDescriptionElement(node, description, OSC_PULSEWIDTH, func != FUNC_PULSE && func != FUNC_PULSERND);
@@ -185,6 +186,10 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 	HideDescriptionElement(node, description, OSC_HARMONICS_OFFSET, func != FUNC_ANALOG);
 	HideDescriptionElement(node, description, OUTPORT_VALUE, true);
 	HideDescriptionElement(node, description, INPORT_X, true);
+	HideDescriptionElement(node, description, FILTER_SLEW_RATE_UP, filterType != Oscillator::FILTERTYPE::SLEW);
+	HideDescriptionElement(node, description, FILTER_SLEW_RATE_DOWN, filterType != Oscillator::FILTERTYPE::SLEW);
+	HideDescriptionElement(node, description, FILTER_INERTIA_DAMPEN, filterType != Oscillator::FILTERTYPE::INERTIA);
+	HideDescriptionElement(node, description, FILTER_INERTIA_INERTIA, filterType != Oscillator::FILTERTYPE::INERTIA);
 
 	return SUPER::GetDDescription(node, description, flags);
 }
