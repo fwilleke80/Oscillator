@@ -26,12 +26,19 @@ STRINGTABLE toscillator
 	OSC_HARMONICS_INTERVAL "Harmonics Interval";
 	OSC_HARMONICS_OFFSET   "Harmonics Offset";
 
+	FILTER_MODE            "Filter";
+		FILTER_MODE_NONE     "None";
+		FILTER_MODE_SLEW     "Slew";
+		FILTER_MODE_INERTIA  "Inertia";
+	FILTER_SLEW_RATE_UP    "Slew Rate Up";
+	FILTER_SLEW_RATE_DOWN  "Slew Rate Down";
+	FILTER_INERTIA_INERTIA "Inertia";
+	FILTER_INERTIA_DAMPEN  "Dampening";
+
 	OSCTAG_OUTPUT_POS_ENABLE   "Position";
 	OSCTAG_OUTPUT_POS          "Strength";
 	OSCTAG_OUTPUT_SCALE_ENABLE "Scale";
 	OSCTAG_OUTPUT_SCALE        "Strength";
 	OSCTAG_OUTPUT_ROT_ENABLE   "Rotation";
 	OSCTAG_OUTPUT_ROT          "Strength";
-	FILTER_SLEW_UP         "Slew-Filter up";
-	FILTER_SLEW_DOWN       "Slew-Filter down";
 }
