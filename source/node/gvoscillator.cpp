@@ -168,7 +168,7 @@ Bool OscillatorNode::Message(GeListNode* node, Int32 type, void* data)
 
 Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description, DESCFLAGS_DESC& flags)
 {
-	if (!description->LoadDescription(ID_OSCILLATORNODE))
+	if (!SUPER::GetDDescription(node, description, flags))
 		return false;
 
 	flags |= DESCFLAGS_DESC::LOADED;
@@ -191,7 +191,7 @@ Bool OscillatorNode::GetDDescription(GeListNode* node, Description* description,
 	HideDescriptionElement(node, description, FILTER_INERTIA_DAMPEN, filterType != Oscillator::FILTERTYPE::INERTIA);
 	HideDescriptionElement(node, description, FILTER_INERTIA_INERTIA, filterType != Oscillator::FILTERTYPE::INERTIA);
 
-	return SUPER::GetDDescription(node, description, flags);
+	return true;
 }
 
 Bool OscillatorNode::GetDParameter(GeListNode* node, const DescID& id, GeData& t_data, DESCFLAGS_GET& flags)
